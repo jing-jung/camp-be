@@ -11,7 +11,6 @@ rm -rf "${BUILD_DIR}" "${ZIP_PATH}"
 mkdir -p "${BUILD_DIR}" "${ROOT_DIR}/dist"
 
 "${PYTHON_BIN}" -m pip install \
-  --no-build-isolation \
   --target "${BUILD_DIR}" \
   "${API_DIR}"
 
