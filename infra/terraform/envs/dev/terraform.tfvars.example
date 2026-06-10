@@ -1,0 +1,25 @@
+environment = "dev"
+aws_region  = "ap-northeast-2"
+
+api_lambda_package_path = "../../dist/stockbrief-api-lambda.zip"
+cors_allowed_origins    = "http://localhost:3000,http://127.0.0.1:3000"
+
+amplify_repository_url = "https://github.com/example/StockBrief-fe"
+amplify_branch_name    = "main"
+
+cognito_callback_urls           = ["http://localhost:3000/auth/callback"]
+cognito_logout_urls             = ["http://localhost:3000/account"]
+cognito_hosted_ui_domain_prefix = ""
+
+db_instance_class       = "db.t4g.micro"
+db_allocated_storage_gb = 20
+
+# Fill these after the dev VPC/subnets/security groups are chosen.
+db_subnet_ids             = []
+db_security_group_ids     = []
+lambda_subnet_ids         = []
+lambda_security_group_ids = []
+
+agentcore_runtime_enabled       = false
+agentcore_runtime_container_uri = ""
+agentcore_network_mode          = "PUBLIC"
