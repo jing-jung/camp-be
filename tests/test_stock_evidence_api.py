@@ -1,11 +1,12 @@
 from collections.abc import Mapping
+from decimal import Decimal
 from typing import Any
 
 from fastapi.testclient import TestClient
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from app.orm import EvidenceChunk, FinancialStatement, PriceMetric
+from app.orm import EvidenceChunk, FinancialStatement, PriceMetric, RecommendationScore, RiskSignal
 
 
 PROHIBITED_KOREAN_TERMS = [
@@ -56,6 +57,43 @@ def test_stock_detail_returns_identifiers(seeded_api_client: TestClient) -> None
     assert data["stock"]["corp_code"] == "MOCK00126380"
     assert {"stock", "price", "score", "brief", "evidence_preview"}.issubset(data)
     assert {"total", "grade", "as_of", "version", "breakdown"}.issubset(data["score"])
+
+
+def test_stock_candidates_respect_risk_profile_sorting(
+    seeded_api_client: TestClient,
+    seeded_session: Session,
+) -> None:
+    score = seeded_session.scalars(
+        select(RecommendationScore).where(RecommendationScore.ticker == "005930")
+    ).one()
+    for index in range(5):
+        seeded_session.add(
+            RiskSignal(
+                ticker="005930",
+                as_of_date=score.as_of_date,
+                risk_tag=f"extra_review_risk_{index}",
+                severity="medium",
+                penalty_points=Decimal("1.00"),
+                display_text="추가 리스크 확인이 필요합니다.",
+                description="추가 리스크 확인이 필요합니다.",
+                evidence_ids=[],
+            )
+        )
+    seeded_session.commit()
+
+    aggressive = seeded_api_client.get(
+        "/v1/stocks/candidates",
+        params={"risk_profile": "aggressive", "limit": 1},
+    )
+    conservative = seeded_api_client.get(
+        "/v1/stocks/candidates",
+        params={"risk_profile": "conservative", "limit": 1},
+    )
+
+    assert aggressive.status_code == 200
+    assert conservative.status_code == 200
+    assert aggressive.json()["data"]["items"][0]["ticker"] == "005930"
+    assert conservative.json()["data"]["items"][0]["ticker"] != "005930"
 
 
 def test_invalid_ticker_returns_contract_error(seeded_api_client: TestClient) -> None:

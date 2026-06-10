@@ -168,6 +168,7 @@ def get_recommendation_candidate(
 )
 def list_stock_candidates(
     request: Request,
+    risk_profile: RiskProfile = "balanced",
     market: str | None = Query(default=None, pattern="^(KOSPI|KOSDAQ)$"),
     sector: str | None = None,
     sort: str = Query(default="score_desc", pattern="^(score_desc|volume_desc|updated_desc)$"),
@@ -180,7 +181,12 @@ def list_stock_candidates(
         _stock_candidate_contract_item(session=session, stock=stock, score=score)
         for stock, score in rows
     ]
-    items = _sort_stock_candidate_contract_items(items, sort)
+    items = _sort_stock_candidate_contract_items(
+        session=session,
+        items=items,
+        sort=sort,
+        risk_profile=risk_profile,
+    )
     paged = items[offset : offset + limit]
     as_of = max((item.score.as_of for item in items), default=datetime.now(timezone.utc).date())
     return StockCandidateContractResponse(
@@ -517,8 +523,11 @@ def _candidate_evidence_summary(
 
 
 def _sort_stock_candidate_contract_items(
+    *,
+    session: Session,
     items: list[StockCandidateContractItem],
     sort: str,
+    risk_profile: RiskProfile,
 ) -> list[StockCandidateContractItem]:
     if sort == "volume_desc":
         return sorted(
@@ -528,7 +537,39 @@ def _sort_stock_candidate_contract_items(
         )
     if sort == "updated_desc":
         return sorted(items, key=lambda item: item.score.as_of, reverse=True)
-    return sorted(items, key=lambda item: item.score.total, reverse=True)
+    if risk_profile == "conservative":
+        return sorted(
+            items,
+            key=lambda item: (
+                _candidate_risk_count(session, item.ticker, item.score.as_of),
+                -item.score.total,
+            ),
+        )
+    if risk_profile == "aggressive":
+        return sorted(items, key=lambda item: item.score.total, reverse=True)
+    return sorted(
+        items,
+        key=lambda item: (
+            item.score.total
+            - _candidate_risk_count(session, item.ticker, item.score.as_of) * 0.5
+        ),
+        reverse=True,
+    )
+
+
+def _candidate_risk_count(
+    session: Session,
+    ticker: str,
+    as_of_date: date,
+) -> int:
+    return len(
+        session.scalars(
+            select(RiskSignal).where(
+                RiskSignal.ticker == ticker,
+                RiskSignal.as_of_date == as_of_date,
+            )
+        ).all()
+    )
 
 
 def _stock_brief_contract(

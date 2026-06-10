@@ -145,6 +145,7 @@ Query:
 
 | Name | Required | Default |
 | --- | --- | --- |
+| `risk_profile` | no | `balanced` |
 | `market` | no | all |
 | `sector` | no | all |
 | `sort` | no | `score_desc` |
@@ -152,6 +153,12 @@ Query:
 | `offset` | no | `0` |
 
 `sort` supports `score_desc`, `volume_desc`, and `updated_desc`.
+`risk_profile` supports `conservative`, `balanced`, and `aggressive`.
+When `sort=score_desc`, risk profile affects ordering:
+
+- `conservative`: fewer risk signals first, then higher score.
+- `balanced`: higher score with a small risk-count penalty.
+- `aggressive`: higher score first.
 
 Response `data`:
 
