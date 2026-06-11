@@ -4,6 +4,7 @@ aws_region  = "ap-northeast-2"
 api_lambda_package_path = "../../dist/stockbrief-api-lambda.zip"
 cors_allowed_origins    = "https://staging.example.com"
 
+enable_amplify         = false
 amplify_repository_url = "https://github.com/example/StockBrief-fe"
 amplify_branch_name    = "staging"
 # Provide a real token via TF_VAR_amplify_access_token, not in this file.

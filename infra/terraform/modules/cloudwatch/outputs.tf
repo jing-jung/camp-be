@@ -11,9 +11,9 @@ output "api_gateway_log_group_arn" {
 }
 
 output "rds_log_group_name" {
-  value = aws_cloudwatch_log_group.rds.name
+  value = try(aws_cloudwatch_log_group.rds[0].name, "")
 }
 
 output "amplify_log_group_name" {
-  value = aws_cloudwatch_log_group.amplify.name
+  value = try(aws_cloudwatch_log_group.amplify[0].name, "")
 }

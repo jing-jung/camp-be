@@ -5,7 +5,7 @@ output "api_base_url" {
 
 output "amplify_app_id" {
   description = "Amplify app id."
-  value       = module.amplify.app_id
+  value       = try(module.amplify[0].app_id, "")
 }
 
 output "database_secret_arn" {

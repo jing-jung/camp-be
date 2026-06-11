@@ -9,3 +9,13 @@ variable "project" {
 variable "environment" {
   type = string
 }
+
+variable "enable_rds" {
+  type    = bool
+  default = false
+}
+
+variable "enable_amplify" {
+  type    = bool
+  default = false
+}

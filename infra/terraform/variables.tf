@@ -57,6 +57,12 @@ variable "amplify_repository_url" {
   default     = "https://github.com/example/stockbrief"
 }
 
+variable "enable_amplify" {
+  description = "Whether to create the Amplify Hosting app. Keep false until the target GitHub organization approves the Amplify GitHub App."
+  type        = bool
+  default     = false
+}
+
 variable "amplify_access_token" {
   description = "GitHub personal access token used by Amplify to connect the repository. Prefer TF_VAR_amplify_access_token and never commit a real value."
   type        = string

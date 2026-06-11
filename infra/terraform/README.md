@@ -61,6 +61,7 @@ Do not run `terraform apply` until AWS account, networking, repository connectio
 
 3. Fill placeholders in `infra/terraform/envs/dev/terraform.tfvars`:
 
+   - `enable_amplify`
    - `amplify_repository_url`
    - `db_subnet_ids`
    - `db_security_group_ids`
@@ -70,6 +71,9 @@ Do not run `terraform apply` until AWS account, networking, repository connectio
    - `cognito_callback_urls`
    - `cognito_logout_urls`
    - `cognito_hosted_ui_domain_prefix`
+
+   For the first backend-only deployment, keep `enable_amplify = false`. Enable
+   it only after the target GitHub organization approves the Amplify GitHub App.
 
 4. If deploying Amplify through Terraform, install the AWS Amplify GitHub App for
    the target region/account and provide a GitHub personal access token through
