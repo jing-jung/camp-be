@@ -9,9 +9,11 @@ module "secrets" {
 module "cloudwatch" {
   source = "./modules/cloudwatch"
 
-  name_prefix = local.name_prefix
-  project     = var.project
-  environment = var.environment
+  name_prefix    = local.name_prefix
+  project        = var.project
+  environment    = var.environment
+  enable_rds     = length(var.db_subnet_ids) > 0
+  enable_amplify = var.enable_amplify
 }
 
 module "cognito" {
@@ -96,10 +98,12 @@ module "api_lambda" {
 }
 
 module "amplify" {
+  count  = var.enable_amplify ? 1 : 0
   source = "./modules/amplify"
 
   name_prefix              = local.name_prefix
   repository_url           = var.amplify_repository_url
+  access_token             = var.amplify_access_token
   branch_name              = var.amplify_branch_name
   next_public_api_base     = module.api_lambda.api_base_url
   cognito_region           = var.aws_region
