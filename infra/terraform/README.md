@@ -92,23 +92,64 @@ repository variables required by `.github/workflows/backend-dev-deploy.yml`.
    For `ap-northeast-2`, install the GitHub App from:
    `https://github.com/apps/aws-amplify-ap-northeast-2/installations/new`
 
-5. Initialize and validate Terraform:
+5. Initialize and validate Terraform. For the current dev workflow, Terraform
+   uses `infra/terraform/backend.tf`, which points at the dev S3 state backend.
+   If you are preparing another environment, update the backend bucket/key first
+   and follow `docs/engineering/DEPLOYMENT_BOOTSTRAP.md`.
 
    ```bash
    cd infra/terraform
    terraform init
    terraform fmt -check -recursive
    terraform validate
-   terraform plan -var-file=envs/dev/terraform.tfvars
+   terraform plan -var-file=envs/dev/deploy.auto.tfvars.json
    ```
 
 6. Review the plan. Apply only after placeholders, cost expectations, deletion protection, networking, and secret handling are approved:
 
    ```bash
-   terraform apply -var-file=envs/dev/terraform.tfvars
+   terraform apply -var-file=envs/dev/deploy.auto.tfvars.json
    ```
 
 7. After resources exist, update Secrets Manager values outside git and redeploy Lambda/Amplify as needed.
+
+## Terraform Backend Operations
+
+Terraform backend settings are not normal variables. They are read during
+`terraform init`, so the selected state bucket and key must be reviewed before
+planning or applying.
+
+Current dev backend:
+
+| Setting | Value |
+| --- | --- |
+| Bucket | `stockbrief-terraform-state-420615923610-ap-northeast-2` |
+| Key | `stockbrief/dev/terraform.tfstate` |
+| Region | `ap-northeast-2` |
+| Lock table | `stockbrief-terraform-locks` |
+
+Environment key convention:
+
+| Environment | State key |
+| --- | --- |
+| `dev` | `stockbrief/dev/terraform.tfstate` |
+| `staging` | `stockbrief/staging/terraform.tfstate` |
+| `prod` | `stockbrief/prod/terraform.tfstate` |
+
+Use `terraform init -reconfigure` when selecting a different backend that already
+has the intended state or starts empty. Use `terraform init -migrate-state` only
+when moving the same state to a new backend location. Before any apply after a
+backend change, run:
+
+```bash
+terraform state list
+terraform plan -var-file=envs/dev/deploy.auto.tfvars.json
+```
+
+For GitHub Actions, `backend-dev-deploy` initializes Terraform with the committed
+`backend.tf` and `envs/dev/deploy.auto.tfvars.json`. Any environment expansion
+must change backend config, tfvars, and workflow behavior together in one PR to
+avoid applying one environment's variables to another environment's state.
 
 ## Lambda Packaging
 
@@ -327,7 +368,19 @@ create alarms without notification actions.
 
 The dev backend deployment uses GitHub Actions OIDC instead of long-lived AWS
 access keys. The `backend-dev-deploy` workflow runs on pushes to `main` and on
-manual dispatch.
+manual dispatch. The deploy job is attached to the GitHub Environment named
+`dev`.
+
+Because the job uses `environment: dev`, the IAM OIDC trust policy expects the
+GitHub token subject to be:
+
+```text
+repo:80-hours-a-week/StockBrief-be:environment:dev
+```
+
+The `dev` GitHub Environment uses a custom deployment branch policy that allows
+only the `main` branch. Keep that branch policy aligned with the IAM trust
+policy whenever the workflow branch or environment name changes.
 
 Bootstrap resources:
 
@@ -348,6 +401,12 @@ Required GitHub repository variables:
 The workflow builds `dist/stockbrief-api-lambda.zip`, initializes Terraform with
 the S3 backend, plans with `envs/dev/deploy.auto.tfvars.json`, and applies the
 plan to dev.
+
+`AWS_DEV_DEPLOY_ROLE_ARN` and `OPERATIONAL_ALARM_EMAILS_JSON` can remain
+repository variables for the single dev environment. If staging or prod is added,
+move each environment's values into the matching GitHub Environment variables.
+Enable required reviewers on the `dev` environment only if the team wants manual
+approval before every dev apply.
 
 ## Current Limitations
 
