@@ -178,6 +178,12 @@ variable "lambda_security_group_ids" {
   default     = []
 }
 
+variable "vpc_endpoint_route_table_ids" {
+  description = "Route table IDs that should receive Gateway VPC endpoints for private AWS service access from Lambda subnets."
+  type        = list(string)
+  default     = []
+}
+
 variable "enable_lambda_nat_egress" {
   description = "Whether to create a NAT Gateway and private route table associations for Lambda outbound internet egress. Keep false until live provider ingestion is approved because NAT Gateway has hourly and data processing costs."
   type        = bool
