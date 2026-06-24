@@ -4,7 +4,6 @@ from app.services.candidate_service import CandidateService
 from app.services.evidence_service import EvidenceService
 from app.services.stock_service import StockService
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 

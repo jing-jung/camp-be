@@ -4,7 +4,14 @@ from pathlib import Path
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import Session
 
-from app.orm import Base, CompanyIdentifier, IngestionRun, RecommendationScore, User, Watchlist
+from app.orm import (
+    Base,
+    CompanyIdentifier,
+    IngestionRun,
+    RecommendationScore,
+    User,
+    Watchlist,
+)
 
 API_ROOT = Path(__file__).resolve().parents[1]
 
@@ -38,14 +45,23 @@ def test_metadata_contains_mvp_tables() -> None:
 
 
 def test_initial_migration_creates_mvp_tables() -> None:
-    migration = (API_ROOT / "migrations/versions/0001_initial_mvp_schema.py").read_text()
+    migration = (
+        API_ROOT / "migrations/versions/0001_initial_mvp_schema.py"
+    ).read_text(encoding='utf-8')
 
-    for table_name in EXPECTED_TABLES - {"users", "user_preferences", "watchlists", "ingestion_runs"}:
+    for table_name in EXPECTED_TABLES - {
+        "users",
+        "user_preferences",
+        "watchlists",
+        "ingestion_runs",
+    }:
         assert f'"{table_name}"' in migration
 
 
 def test_p1_auth_migration_creates_user_state_tables() -> None:
-    migration = (API_ROOT / "migrations/versions/0002_p1_auth_user_state.py").read_text()
+    migration = (
+        API_ROOT / "migrations/versions/0002_p1_auth_user_state.py"
+    ).read_text(encoding='utf-8')
 
     for table_name in {"users", "user_preferences", "watchlists"}:
         assert f'"{table_name}"' in migration
@@ -77,15 +93,22 @@ def test_create_all_builds_core_tables_and_columns() -> None:
     }.issubset(score_columns)
 
     user_columns = {column["name"] for column in inspector.get_columns("users")}
-    assert {"id", "cognito_sub", "email", "email_verified", "nickname"}.issubset(user_columns)
+    assert {"id", "cognito_sub", "email", "email_verified", "nickname"}.issubset(
+        user_columns
+    )
     assert "password" not in user_columns
 
 
 def test_ingestion_runs_schema_is_declared() -> None:
     table = Base.metadata.tables["ingestion_runs"]
-    assert {"run_id", "job_type", "provider", "status", "input_hash", "started_at"}.issubset(
-        table.c.keys()
-    )
+    assert {
+        "run_id",
+        "job_type",
+        "provider",
+        "status",
+        "input_hash",
+        "started_at",
+    }.issubset(table.c.keys())
 
     constraints = {constraint.name for constraint in IngestionRun.__table__.constraints}
     assert "uq_ingestion_runs_run_id" in constraints
@@ -94,22 +117,25 @@ def test_ingestion_runs_schema_is_declared() -> None:
 
 
 def test_ingestion_runs_migration_creates_table() -> None:
-    migration = (API_ROOT / "migrations/versions/0003_ingestion_runs.py").read_text()
+    migration = (API_ROOT / "migrations/versions/0003_ingestion_runs.py").read_text(encoding='utf-8')
     input_hash_guard_migration = (
         API_ROOT / "migrations/versions/0004_ingestion_input_hash_guard.py"
-    ).read_text()
+    ).read_text(encoding='utf-8')
 
     assert '"ingestion_runs"' in migration
     assert "uq_ingestion_runs_run_id" in migration
     assert "ix_ingestion_runs_job_type_provider_status" in migration
     assert "uq_ingestion_runs_active_input_hash" in input_hash_guard_migration
     assert "status IN ('started', 'succeeded')" in input_hash_guard_migration
-    assert "Cannot create uq_ingestion_runs_active_input_hash" in input_hash_guard_migration
+    assert (
+        "Cannot create uq_ingestion_runs_active_input_hash"
+        in input_hash_guard_migration
+    )
     assert "having count(*) > 1" in input_hash_guard_migration
 
 
 def test_db_schema_documents_input_hash_migration_precheck() -> None:
-    schema_doc = (API_ROOT / "docs/engineering/DB_SCHEMA.md").read_text()
+    schema_doc = (API_ROOT / "docs/engineering/DB_SCHEMA.md").read_text(encoding='utf-8')
 
     assert "0004_ingestion_input_hash_guard" in schema_doc
     assert "select input_hash, count(*) as duplicate_count" in schema_doc
@@ -136,7 +162,9 @@ def test_required_uniqueness_constraints_are_declared() -> None:
     user_constraints = {constraint.name for constraint in User.__table__.constraints}
     assert "uq_users_cognito_sub" in user_constraints
 
-    watchlist_constraints = {constraint.name for constraint in Watchlist.__table__.constraints}
+    watchlist_constraints = {
+        constraint.name for constraint in Watchlist.__table__.constraints
+    }
     assert "uq_watchlists_user_ticker" in watchlist_constraints
 
 
@@ -146,7 +174,9 @@ def test_can_insert_minimal_stock_identifier_and_score() -> None:
 
     with Session(engine) as session:
         session.execute(
-            Base.metadata.tables["stocks"].insert().values(
+            Base.metadata.tables["stocks"]
+            .insert()
+            .values(
                 ticker="005930",
                 company_name="Samsung Electronics",
                 market="KOSPI",
@@ -172,7 +202,9 @@ def test_can_insert_minimal_stock_identifier_and_score() -> None:
             )
         )
         session.execute(
-            Base.metadata.tables["recommendation_scores"].insert().values(
+            Base.metadata.tables["recommendation_scores"]
+            .insert()
+            .values(
                 ticker="005930",
                 as_of_date=date(2026, 6, 9),
                 score_version="score-rules-2026-06-01",

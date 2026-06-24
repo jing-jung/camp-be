@@ -6,11 +6,14 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.orm import ApiCacheEntry, ExternalApiCallLog
-from app.services.external import NaverNewsClient, OpenDartClient
-from app.services.external import aws_secrets
+from app.services.external import NaverNewsClient, OpenDartClient, aws_secrets
 from app.services.external.clients import BaseExternalApiClient
 from app.services.external.logger import ExternalApiCallLogger
-from app.services.external.types import ExternalRequest, ExternalResponse, RateLimitPolicy
+from app.services.external.types import (
+    ExternalRequest,
+    ExternalResponse,
+    RateLimitPolicy,
+)
 
 
 def test_external_clients_share_base_template_methods() -> None:
@@ -92,9 +95,9 @@ def test_aws_secret_loader_uses_boto3_client(monkeypatch) -> None:
 
     monkeypatch.setattr(aws_secrets.boto3, "client", fake_client)
 
-    assert aws_secrets.load_secret_json("stockbrief-dev/database", region="ap-northeast-2") == {
-        "DATABASE_URL": "postgresql+psycopg://prod"
-    }
+    assert aws_secrets.load_secret_json(
+        "stockbrief-dev/database", region="ap-northeast-2"
+    ) == {"DATABASE_URL": "postgresql+psycopg://prod"}
     assert calls[0]["service_name"] == "secretsmanager"
     assert calls[0]["region_name"] == "ap-northeast-2"
     assert calls[1] == {"SecretId": "stockbrief-dev/database"}
@@ -187,7 +190,9 @@ def test_opendart_success_uses_corp_code_mapping_without_logging_secret(
             payload={
                 "status": "000",
                 "message": "OK",
-                "list": [{"corp_code": request.params["corp_code"], "report_nm": "mock"}],
+                "list": [
+                    {"corp_code": request.params["corp_code"], "report_nm": "mock"}
+                ],
             },
         )
 
@@ -273,7 +278,9 @@ def test_naver_news_success_normalizes_payload_and_does_not_log_secrets(
         )
 
     client = NaverNewsClient(
-        settings=Settings(NAVER_CLIENT_ID="naver-id", NAVER_CLIENT_SECRET="naver-secret"),
+        settings=Settings(
+            NAVER_CLIENT_ID="naver-id", NAVER_CLIENT_SECRET="naver-secret"
+        ),
         session=seeded_session,
         transport=transport,
     )
@@ -308,7 +315,9 @@ def test_external_api_failure_returns_fallback_instead_of_raising(
         return ExternalResponse(status_code=503, payload={"error": "temporary"})
 
     client = NaverNewsClient(
-        settings=Settings(NAVER_CLIENT_ID="naver-id", NAVER_CLIENT_SECRET="naver-secret"),
+        settings=Settings(
+            NAVER_CLIENT_ID="naver-id", NAVER_CLIENT_SECRET="naver-secret"
+        ),
         session=seeded_session,
         transport=transport,
         rate_limit_policy=RateLimitPolicy(max_retries=0, backoff_seconds=0),
@@ -336,7 +345,9 @@ def test_rate_limit_policy_retries_retryable_status(
         )
 
     client = NaverNewsClient(
-        settings=Settings(NAVER_CLIENT_ID="naver-id", NAVER_CLIENT_SECRET="naver-secret"),
+        settings=Settings(
+            NAVER_CLIENT_ID="naver-id", NAVER_CLIENT_SECRET="naver-secret"
+        ),
         session=seeded_session,
         transport=transport,
         rate_limit_policy=RateLimitPolicy(max_retries=1, backoff_seconds=0),

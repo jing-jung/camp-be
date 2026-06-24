@@ -19,7 +19,6 @@ from app.orm import (
 )
 from app.services.candidate_service import CandidateService
 
-
 PROHIBITED_KOREAN_TERMS = [
     "매수",
     "매도",
@@ -192,7 +191,9 @@ def test_stock_candidates_use_database_limit_offset(
     assert response.status_code == 200
     assert response.json()["data"]["pagination"]["limit"] == 1
     assert response.json()["data"]["pagination"]["offset"] == 1
-    assert any(" LIMIT " in statement and " OFFSET " in statement for statement in statements)
+    assert any(
+        " LIMIT " in statement and " OFFSET " in statement for statement in statements
+    )
 
 
 def test_stock_candidate_aggregate_queries_skip_price_metric_join(
@@ -391,7 +392,9 @@ def test_stock_evidence_chunk_only_filters_dates_and_paginates_in_database(
     seeded_api_client: TestClient,
     seeded_session: Session,
 ) -> None:
-    seeded_session.execute(delete(EvidenceChunk).where(EvidenceChunk.ticker == "005930"))
+    seeded_session.execute(
+        delete(EvidenceChunk).where(EvidenceChunk.ticker == "005930")
+    )
     base_dates = [
         datetime(2026, 6, 20, 9, tzinfo=timezone.utc),
         datetime(2026, 6, 21, 9, tzinfo=timezone.utc),
@@ -481,11 +484,7 @@ def test_price_evidence_has_source_identifier_when_url_is_missing(
     assert response.status_code == 200
     evidence = response.json()["data"]["items"]
     assert evidence
-    price_items = [
-        item
-        for item in evidence
-        if item["id"].startswith("price_")
-    ]
+    price_items = [item for item in evidence if item["id"].startswith("price_")]
     assert price_items
     assert price_items[0]["url"] is None
     assert price_items[0]["source_name"] == "KRX_FALLBACK_MOCK"
@@ -501,7 +500,9 @@ def test_stock_evidence_empty_result_has_clear_message(
         delete(FinancialStatement).where(FinancialStatement.ticker == "005930")
     )
     seeded_session.execute(delete(PriceMetric).where(PriceMetric.ticker == "005930"))
-    seeded_session.execute(delete(EvidenceChunk).where(EvidenceChunk.ticker == "005930"))
+    seeded_session.execute(
+        delete(EvidenceChunk).where(EvidenceChunk.ticker == "005930")
+    )
     seeded_session.commit()
 
     response = seeded_api_client.get("/v1/stocks/005930/evidence")
@@ -538,22 +539,22 @@ def test_stock_evidence_openapi_documents_response_model(
     assert response.status_code == 200
     paths = response.json()["paths"]
     assert (
-            "StockSearchContractResponse"
-            in paths["/v1/stocks/search"]["get"]["responses"]["200"]["content"][
-                "application/json"
-            ]["schema"]["$ref"]
+        "StockSearchContractResponse"
+        in paths["/v1/stocks/search"]["get"]["responses"]["200"]["content"][
+            "application/json"
+        ]["schema"]["$ref"]
     )
     assert (
-            "StockDetailContractResponse"
-            in paths["/v1/stocks/{ticker}"]["get"]["responses"]["200"]["content"][
-                "application/json"
-            ]["schema"]["$ref"]
+        "StockDetailContractResponse"
+        in paths["/v1/stocks/{ticker}"]["get"]["responses"]["200"]["content"][
+            "application/json"
+        ]["schema"]["$ref"]
     )
     assert (
-            "StockEvidenceContractResponse"
-            in paths["/v1/stocks/{ticker}/evidence"]["get"]["responses"]["200"][
-            "content"
-        ]["application/json"]["schema"]["$ref"]
+        "StockEvidenceContractResponse"
+        in paths["/v1/stocks/{ticker}/evidence"]["get"]["responses"]["200"]["content"][
+            "application/json"
+        ]["schema"]["$ref"]
     )
 
 

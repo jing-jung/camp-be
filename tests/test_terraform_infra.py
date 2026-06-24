@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 TERRAFORM_ROOT = REPOSITORY_ROOT / "infra/terraform"
 
@@ -80,7 +79,10 @@ def test_rds_backup_retention_period_has_cost_policy_validation() -> None:
     assert expected_description in rds_module_variables_tf
     assert "var.backup_retention_period >= 0" in rds_module_variables_tf
     assert "var.backup_retention_period <= 35" in rds_module_variables_tf
-    assert "backup_retention_period must be between 0 and 35 days" in rds_module_variables_tf
+    assert (
+        "backup_retention_period must be between 0 and 35 days"
+        in rds_module_variables_tf
+    )
     assert expected_error in rds_module_variables_tf
 
 
@@ -129,7 +131,10 @@ def test_amplify_hosted_callback_can_be_overridden_after_domain_creation() -> No
 
     assert 'variable "amplify_cognito_redirect_uri"' in variables_tf
     assert "amplify_cognito_redirect_uri" in dev_tfvars
-    assert "amplify_cognito_redirect_uri == \"\" ? var.cognito_callback_urls[0]" in root_main_tf
+    assert (
+        'amplify_cognito_redirect_uri == "" ? var.cognito_callback_urls[0]'
+        in root_main_tf
+    )
     assert 'output "amplify_default_domain"' in outputs_tf
 
 
@@ -164,8 +169,14 @@ def test_direct_bedrock_chat_provider_is_conditionally_wired() -> None:
     assert 'startswith(var.bedrock_chat_model_id, "apac.")' in root_main_tf
     assert 'startswith(var.bedrock_chat_model_id, "global.")' in root_main_tf
     assert "bedrock_chat_base_foundation_model_id" in root_main_tf
-    assert 'replace(var.bedrock_chat_model_id, "/^(apac|global)\\\\./", "")' in root_main_tf
-    assert "foundation-model/${local.bedrock_chat_base_foundation_model_id}" in root_main_tf
+    assert (
+        'replace(var.bedrock_chat_model_id, "/^(apac|global)\\\\./", "")'
+        in root_main_tf
+    )
+    assert (
+        "foundation-model/${local.bedrock_chat_base_foundation_model_id}"
+        in root_main_tf
+    )
     assert "inference-profile/${var.bedrock_chat_model_id}" in root_main_tf
     assert "bedrock_chat_inference_profile_foundation_model_regions" in root_main_tf
     assert "bedrock_chat_inference_profile_extra_foundation_model_arns" in root_main_tf
@@ -173,7 +184,7 @@ def test_direct_bedrock_chat_provider_is_conditionally_wired() -> None:
     assert "arn:aws:bedrock:${region}::foundation-model" in root_main_tf
     assert "concat(" in root_main_tf
     assert "data.aws_caller_identity.current.account_id" in root_main_tf
-    assert "var.chat_provider == \"bedrock\"" in root_main_tf
+    assert 'var.chat_provider == "bedrock"' in root_main_tf
 
     assert 'variable "bedrock_chat_foundation_model_arns"' in api_lambda_variables_tf
     assert 'variable "bedrock_chat_inference_profile_arn"' in api_lambda_variables_tf
@@ -185,12 +196,16 @@ def test_direct_bedrock_chat_provider_is_conditionally_wired() -> None:
     assert "api-bedrock-chat-invoke" in api_lambda_tf
     assert "profile ARN" in terraform_readme
     assert "bedrock_chat_inference_profile_foundation_model_regions" in terraform_readme
-    assert "bedrock_chat_inference_profile_extra_foundation_model_arns" in terraform_readme
+    assert (
+        "bedrock_chat_inference_profile_extra_foundation_model_arns" in terraform_readme
+    )
     assert "ap-southeast-2" in terraform_readme
     assert "provider on `mock`" in terraform_readme
 
 
-def test_ingestion_pipeline_resources_are_wired_with_scheduler_disabled_by_default() -> None:
+def test_ingestion_pipeline_resources_are_wired_with_scheduler_disabled_by_default() -> (
+    None
+):
     ingestion_tf = _read("ingestion.tf")
     root_main_tf = _read("main.tf")
     variables_tf = _read("variables.tf")
@@ -202,17 +217,17 @@ def test_ingestion_pipeline_resources_are_wired_with_scheduler_disabled_by_defau
     assert 'variable "enable_ingestion_scheduler"' in variables_tf
     assert 'variable "ingestion_schedule_jobs"' in variables_tf
     assert "default     = false" in variables_tf
-    assert "aws_s3_bucket\" \"ingestion_raw" in ingestion_tf
-    assert "aws_kms_key\" \"ingestion_raw" in ingestion_tf
+    assert 'aws_s3_bucket" "ingestion_raw' in ingestion_tf
+    assert 'aws_kms_key" "ingestion_raw' in ingestion_tf
     assert "enable_key_rotation     = true" in ingestion_tf
     assert 'sse_algorithm     = "aws:kms"' in ingestion_tf
-    assert "aws_sqs_queue\" \"ingestion_dlq" in ingestion_tf
+    assert 'aws_sqs_queue" "ingestion_dlq' in ingestion_tf
     assert "sqs_managed_sse_enabled   = true" in ingestion_tf
-    assert "aws_scheduler_schedule\" \"provider_ingestion" in ingestion_tf
+    assert 'aws_scheduler_schedule" "provider_ingestion' in ingestion_tf
     assert "local.ingestion_scheduler_enabled" in ingestion_tf
     assert "local.ingestion_schedule_jobs_by_key" in ingestion_tf
     assert "for_each = local.ingestion_schedule_jobs_by_key" in ingestion_tf
-    assert "stockbrief_operation = \"ingest_provider_batch\"" in ingestion_tf
+    assert 'stockbrief_operation = "ingest_provider_batch"' in ingestion_tf
     assert "raise_on_failure     = true" in ingestion_tf
     assert "INGESTION_RAW_BUCKET" in root_main_tf
     assert "INGESTION_RAW_BUCKET" in api_lambda_tf
@@ -248,27 +263,33 @@ def test_lambda_nat_egress_is_toggleable_and_disabled_by_default() -> None:
     variables_tf = _read("variables.tf")
     dev_tfvars = _read("envs/dev/terraform.tfvars.example")
     terraform_readme = _read("README.md")
-    deployment_doc = (REPOSITORY_ROOT / "docs/engineering/DEPLOYMENT_BOOTSTRAP.md").read_text(
-        encoding="utf-8"
-    )
+    deployment_doc = (
+        REPOSITORY_ROOT / "docs/engineering/DEPLOYMENT_BOOTSTRAP.md"
+    ).read_text(encoding="utf-8")
 
     assert 'variable "enable_lambda_nat_egress"' in variables_tf
     assert 'variable "lambda_nat_public_subnet_id"' in variables_tf
     assert 'variable "lambda_nat_route_subnet_ids"' in variables_tf
     assert "default     = false" in variables_tf
-    assert "aws_nat_gateway\" \"lambda_egress" in egress_tf
-    assert "aws_eip\" \"lambda_nat" in egress_tf
-    assert "aws_route_table\" \"lambda_nat_egress" in egress_tf
-    assert "aws_route_table_association\" \"lambda_nat_egress" in egress_tf
+    assert 'aws_nat_gateway" "lambda_egress' in egress_tf
+    assert 'aws_eip" "lambda_nat' in egress_tf
+    assert 'aws_route_table" "lambda_nat_egress' in egress_tf
+    assert 'aws_route_table_association" "lambda_nat_egress' in egress_tf
     assert "local.lambda_nat_egress_inputs_valid" in egress_tf
     assert "local.lambda_nat_egress_enabled" in egress_tf
-    assert "!contains(var.lambda_nat_route_subnet_ids, var.lambda_nat_public_subnet_id)" in egress_tf
+    assert (
+        "!contains(var.lambda_nat_route_subnet_ids, var.lambda_nat_public_subnet_id)"
+        in egress_tf
+    )
     assert "not included in lambda_nat_route_subnet_ids" in egress_tf
     assert "precondition" in egress_tf
     assert "enable_lambda_nat_egress     = false" in dev_tfvars
     assert "NAT Gateway hourly and data processing costs" in terraform_readme
     assert "Do not include" in terraform_readme
-    assert "`lambda_nat_public_subnet_id` in `lambda_nat_route_subnet_ids`" in terraform_readme
+    assert (
+        "`lambda_nat_public_subnet_id` in `lambda_nat_route_subnet_ids`"
+        in terraform_readme
+    )
     assert "turn it off after the evidence is collected" in terraform_readme
     assert "remove the NAT Gateway and EIP" in deployment_doc
 
@@ -276,9 +297,9 @@ def test_lambda_nat_egress_is_toggleable_and_disabled_by_default() -> None:
 def test_dev_live_provider_nat_egress_uses_non_overlapping_subnets() -> None:
     deploy_tfvars = json.loads(_read("envs/dev/deploy.auto.tfvars.json"))
     terraform_readme = _read("README.md")
-    runbook = (REPOSITORY_ROOT / "docs/engineering/INGESTION_OPERATIONS_RUNBOOK.md").read_text(
-        encoding="utf-8"
-    )
+    runbook = (
+        REPOSITORY_ROOT / "docs/engineering/INGESTION_OPERATIONS_RUNBOOK.md"
+    ).read_text(encoding="utf-8")
 
     nat_enabled = deploy_tfvars.get("enable_lambda_nat_egress", False)
     nat_public_subnet_id = deploy_tfvars.get("lambda_nat_public_subnet_id", "")
@@ -311,9 +332,18 @@ def test_managed_security_group_egress_is_port_scoped() -> None:
     assert 'resource "aws_security_group_rule" "lambda_database_egress"' in root_main_tf
     assert 'resource "aws_security_group_rule" "rds_proxy_to_rds"' in root_main_tf
     assert 'resource "aws_security_group_rule" "rds_proxy_from_lambda"' in root_main_tf
-    assert 'resource "aws_security_group_rule" "rds_from_managed_database_client"' in root_main_tf
-    assert 'description       = "HTTPS outbound for Cognito, external APIs, and AWS public endpoints"' in root_main_tf
-    assert 'description              = "PostgreSQL to managed database endpoint"' in root_main_tf
+    assert (
+        'resource "aws_security_group_rule" "rds_from_managed_database_client"'
+        in root_main_tf
+    )
+    assert (
+        'description       = "HTTPS outbound for Cognito, external APIs, and AWS public endpoints"'
+        in root_main_tf
+    )
+    assert (
+        'description              = "PostgreSQL to managed database endpoint"'
+        in root_main_tf
+    )
     assert 'description              = "PostgreSQL to RDS"' in root_main_tf
     assert 'protocol          = "-1"' not in root_main_tf
     assert 'protocol                 = "-1"' not in root_main_tf
@@ -331,19 +361,30 @@ def test_rds_proxy_operational_alarms_are_defined_and_documented() -> None:
     terraform_readme = _read("README.md")
 
     assert 'output "proxy_name"' in rds_proxy_outputs_tf
-    assert 'resource "aws_cloudwatch_metric_alarm" "rds_proxy_borrow_latency_high"' in alarms_tf
+    assert (
+        'resource "aws_cloudwatch_metric_alarm" "rds_proxy_borrow_latency_high"'
+        in alarms_tf
+    )
     assert (
         'resource "aws_cloudwatch_metric_alarm" "rds_proxy_database_connection_failures"'
         in alarms_tf
     )
-    assert 'resource "aws_cloudwatch_metric_alarm" "rds_proxy_client_auth_failures"' in alarms_tf
+    assert (
+        'resource "aws_cloudwatch_metric_alarm" "rds_proxy_client_auth_failures"'
+        in alarms_tf
+    )
     assert alarms_tf.count("ProxyName = module.rds_proxy.proxy_name") == 3
     assert "DatabaseConnectionsBorrowLatency" in alarms_tf
     assert "DatabaseConnectionsSetupFailed" in alarms_tf
     assert "ClientConnectionsSetupFailedAuth" in alarms_tf
     assert "threshold           = 1000000" in alarms_tf
-    assert "RDS Proxy | Database connection borrow latency > 1 second" in terraform_readme
+    assert (
+        "RDS Proxy | Database connection borrow latency > 1 second" in terraform_readme
+    )
     assert "Some RDS Proxy metrics are not visible until after the" in terraform_readme
-    assert "Confirm every SNS email subscription is in `Confirmed` status" in terraform_readme
+    assert (
+        "Confirm every SNS email subscription is in `Confirmed` status"
+        in terraform_readme
+    )
     assert "Prefer a team or operations group alias" in terraform_readme
     assert "Terraform plan and state metadata" in terraform_readme

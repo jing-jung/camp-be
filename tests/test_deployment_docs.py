@@ -2,7 +2,6 @@ import json
 import re
 from pathlib import Path
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 SECRET_ENV_KEYS = {
@@ -22,7 +21,9 @@ def test_env_example_secret_keys_match_terraform_secret_docs() -> None:
 
     for key in SECRET_ENV_KEYS:
         assert f"{key}=" in env_example, f".env.example missing secret-like key: {key}"
-        assert key in terraform_readme, f"Terraform README secret list missing key: {key}"
+        assert key in terraform_readme, (
+            f"Terraform README secret list missing key: {key}"
+        )
 
 
 def test_lambda_handler_target_is_documented_and_importable() -> None:
@@ -87,7 +88,10 @@ def test_external_api_secret_update_script_handles_secret_payload_safely() -> No
     assert 'AWS_PROFILE="$profile"' in script
     assert 'AWS_REGION="$region"' in script
     assert 'AWS_DEFAULT_REGION="$region"' in script
-    assert 'terraform -chdir="$terraform_dir" output -raw external_api_secret_arn' in script
+    assert (
+        'terraform -chdir="$terraform_dir" output -raw external_api_secret_arn'
+        in script
+    )
     assert "aws secretsmanager update-secret" in script
     assert '--secret-string "file://${tmp_payload}"' in script
     assert "aws secretsmanager describe-secret" in script
@@ -146,7 +150,9 @@ def _statement_actions(policy: dict[str, object], sid: str) -> set[str]:
     raise AssertionError(f"Policy statement not found: {sid}")
 
 
-def test_ingestion_scheduler_enable_gate_documents_live_provider_prerequisites() -> None:
+def test_ingestion_scheduler_enable_gate_documents_live_provider_prerequisites() -> (
+    None
+):
     terraform_readme = (REPOSITORY_ROOT / "infra/terraform/README.md").read_text(
         encoding="utf-8"
     )
@@ -172,7 +178,9 @@ def test_terraform_readme_documents_external_api_secret_update_runbook() -> None
 
     assert "### External API Credential Update Runbook" in terraform_readme
     assert "terraform output -raw external_api_secret_arn" in terraform_readme
-    assert "scripts/update_external_api_secret.sh --prompt --dry-run" in terraform_readme
+    assert (
+        "scripts/update_external_api_secret.sh --prompt --dry-run" in terraform_readme
+    )
     assert "scripts/update_external_api_secret.sh --prompt" in terraform_readme
     assert "through `AWS_PROFILE`, `AWS_REGION`, and" in terraform_readme
     assert "`AWS_DEFAULT_REGION`" in terraform_readme
@@ -190,7 +198,10 @@ def test_terraform_readme_documents_external_api_secret_update_runbook() -> None
     assert '"provider":"OpenDART"' in terraform_readme
     assert '"provider":"NAVER_NEWS"' in terraform_readme
     assert '"source_date":"YYYY-MM-DD"' in terraform_readme
-    assert "Replace `YYYY-MM-DD` with the business date you want to verify" in terraform_readme
+    assert (
+        "Replace `YYYY-MM-DD` with the business date you want to verify"
+        in terraform_readme
+    )
     assert "missing_api_key" in terraform_readme
     assert "outbound internet egress" in terraform_readme
 
@@ -211,7 +222,10 @@ def test_deployment_bootstrap_documents_dev_cost_pause_and_resume() -> None:
     assert "aws lambda delete-function-concurrency" in deployment_doc
     assert "enable_ingestion_scheduler = false" in deployment_doc
     assert "terraform plan -var-file=envs/dev/deploy.auto.tfvars.json" in deployment_doc
-    assert "Do not delete Terraform-managed resources from the AWS console" in deployment_doc
+    assert (
+        "Do not delete Terraform-managed resources from the AWS console"
+        in deployment_doc
+    )
     assert "Do not use `terraform apply` as a blind repair step" in deployment_doc
 
 
@@ -314,8 +328,9 @@ def test_bootstrap_reconciles_dev_environment_branch_policy_to_main_only() -> No
     ).read_text(encoding="utf-8")
 
     policy_reconciliation = bootstrap_script[
-        bootstrap_script.index("obsolete_branch_policy_ids=") :
-        bootstrap_script.index("echo \"Setting GitHub repository variables")
+        bootstrap_script.index("obsolete_branch_policy_ids=") : bootstrap_script.index(
+            'echo "Setting GitHub repository variables'
+        )
     ]
 
     assert "obsolete_branch_policy_ids" in policy_reconciliation

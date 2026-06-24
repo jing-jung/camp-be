@@ -1,6 +1,5 @@
 from fastapi.testclient import TestClient
 
-
 EXPECTED_API_PATHS = {
     "/v1/health": ["get"],
     "/v1/meta/service-policy": ["get"],
@@ -53,7 +52,9 @@ def test_openapi_path_snapshot(seeded_api_client: TestClient) -> None:
     for path, methods in EXPECTED_API_PATHS.items():
         assert path in paths, f"API contract missing path: {path}"
         for method in methods:
-            assert method in paths[path], f"API contract missing method: {method.upper()} {path}"
+            assert method in paths[path], (
+                f"API contract missing method: {method.upper()} {path}"
+            )
 
 
 def test_recommendation_candidate_schema_required_fields_snapshot(

@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 RUNBOOK = REPOSITORY_ROOT / "docs/engineering/INGESTION_OPERATIONS_RUNBOOK.md"
 

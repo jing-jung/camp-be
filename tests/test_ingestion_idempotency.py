@@ -77,7 +77,9 @@ def test_run_id_is_unique(db_session: Session) -> None:
         db_session.commit()
 
 
-def test_active_input_hash_is_unique_across_different_run_ids(db_session: Session) -> None:
+def test_active_input_hash_is_unique_across_different_run_ids(
+    db_session: Session,
+) -> None:
     db_session.add(
         IngestionRun(
             run_id="opendart-20260618-005930-a",
@@ -275,7 +277,9 @@ def test_active_run_with_same_input_hash_blocks_different_run_id(
         input_hash="same-hash",
     )
 
-    with pytest.raises(ValueError, match="ingestion_run_already_active:opendart-20260618-005930"):
+    with pytest.raises(
+        ValueError, match="ingestion_run_already_active:opendart-20260618-005930"
+    ):
         service.start_or_restart_run(
             run_id="manual-rerun-005930",
             job_type="disclosure",
@@ -460,7 +464,9 @@ def test_input_hash_insert_race_recovers_to_existing_succeeded_run(
             )
         )
         db_session.commit()
-        raise IntegrityError("insert", {}, Exception("active input_hash unique violation"))
+        raise IntegrityError(
+            "insert", {}, Exception("active input_hash unique violation")
+        )
 
     monkeypatch.setattr(service, "start_run", fake_start_run)
 
@@ -496,7 +502,9 @@ def test_input_hash_insert_race_recovers_to_existing_active_run_guard(
             )
         )
         db_session.commit()
-        raise IntegrityError("insert", {}, Exception("active input_hash unique violation"))
+        raise IntegrityError(
+            "insert", {}, Exception("active input_hash unique violation")
+        )
 
     monkeypatch.setattr(service, "start_run", fake_start_run)
 

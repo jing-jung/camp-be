@@ -99,5 +99,14 @@ def test_seed_user_facing_copy_uses_review_candidate_tone(
     )
 
     assert "공개 데이터 기준 검토 포인트" in text
-    for prohibited in ["매수", "매도", "목표가", "진입가", "손절가", "수익 보장", "확실", "무조건"]:
+    for prohibited in [
+        "매수",
+        "매도",
+        "목표가",
+        "진입가",
+        "손절가",
+        "수익 보장",
+        "확실",
+        "무조건",
+    ]:
         assert prohibited not in text

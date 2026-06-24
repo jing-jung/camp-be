@@ -1,5 +1,5 @@
-from app.config import Settings
 from app import db
+from app.config import Settings
 
 
 def test_database_url_has_no_hardcoded_default(monkeypatch) -> None:
@@ -20,7 +20,9 @@ def test_resolve_database_url_prefers_local_env_when_local(monkeypatch) -> None:
     monkeypatch.setattr(
         db,
         "load_secret_json",
-        lambda _secret_id: (_ for _ in ()).throw(AssertionError("secret should not be loaded")),
+        lambda _secret_id: (_ for _ in ()).throw(
+            AssertionError("secret should not be loaded")
+        ),
     )
     db.resolve_database_url.cache_clear()
 
@@ -42,7 +44,9 @@ def test_resolve_database_url_uses_secret_when_env_url_missing(monkeypatch) -> N
     monkeypatch.setattr(
         db,
         "load_secret_json",
-        lambda secret_id: calls.append(secret_id) or {"DATABASE_URL": "postgresql+psycopg://prod"}
+        lambda secret_id: (
+            calls.append(secret_id) or {"DATABASE_URL": "postgresql+psycopg://prod"}
+        ),
     )
     db.resolve_database_url.cache_clear()
 
@@ -50,7 +54,9 @@ def test_resolve_database_url_uses_secret_when_env_url_missing(monkeypatch) -> N
     assert calls == ["arn:aws:secretsmanager:ap-northeast-2:123:secret:stockbrief"]
 
 
-def test_resolve_database_url_builds_proxy_url_from_secret_credentials(monkeypatch) -> None:
+def test_resolve_database_url_builds_proxy_url_from_secret_credentials(
+    monkeypatch,
+) -> None:
     monkeypatch.setattr(
         db,
         "get_settings",
@@ -76,7 +82,9 @@ def test_resolve_database_url_builds_proxy_url_from_secret_credentials(monkeypat
     )
 
 
-def test_resolve_database_url_accepts_host_with_port_from_rds_endpoint(monkeypatch) -> None:
+def test_resolve_database_url_accepts_host_with_port_from_rds_endpoint(
+    monkeypatch,
+) -> None:
     monkeypatch.setattr(
         db,
         "get_settings",

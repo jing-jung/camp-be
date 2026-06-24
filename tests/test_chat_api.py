@@ -10,8 +10,11 @@ from sqlalchemy.orm import Session
 from app.config import Settings, get_settings
 from app.main import app
 from app.orm import EvidenceChunk, FinancialStatement, PriceMetric, RecommendationScore
-from app.services.chat import ChatProviderUnavailable, chat_provider_for, compose_chat_answer
-
+from app.services.chat import (
+    ChatProviderUnavailable,
+    chat_provider_for,
+    compose_chat_answer,
+)
 
 PROHIBITED_KOREAN_OUTPUT_TERMS = [
     "매수",
@@ -537,7 +540,9 @@ def test_chat_says_evidence_is_insufficient_when_evidence_is_weak(
         delete(FinancialStatement).where(FinancialStatement.ticker == "005930")
     )
     seeded_session.execute(delete(PriceMetric).where(PriceMetric.ticker == "005930"))
-    seeded_session.execute(delete(EvidenceChunk).where(EvidenceChunk.ticker == "005930"))
+    seeded_session.execute(
+        delete(EvidenceChunk).where(EvidenceChunk.ticker == "005930")
+    )
     seeded_session.commit()
 
     response = seeded_api_client.post(

@@ -107,10 +107,15 @@ def test_score_total_is_bounded_and_has_eight_components() -> None:
     assert 0 <= result.total_score <= 100
     assert len(result.components) == 8
     assert sum(component.weight for component in result.components) == 100
-    assert all(0 <= component.weighted_score <= component.weight for component in result.components)
+    assert all(
+        0 <= component.weighted_score <= component.weight
+        for component in result.components
+    )
 
 
-def test_missing_data_is_reported_and_weak_evidence_level_when_inputs_are_sparse() -> None:
+def test_missing_data_is_reported_and_weak_evidence_level_when_inputs_are_sparse() -> (
+    None
+):
     result = calculate_recommendation_score(
         RecommendationScoreInput(
             ticker="000000",
@@ -130,7 +135,9 @@ def test_missing_data_is_reported_and_weak_evidence_level_when_inputs_are_sparse
     assert "liquidity.inputs" in result.missing_data
 
 
-def test_fallback_price_metrics_are_used_without_marking_price_components_missing() -> None:
+def test_fallback_price_metrics_are_used_without_marking_price_components_missing() -> (
+    None
+):
     score_input = _base_input().model_copy(
         update={
             "price_metrics": None,
@@ -187,5 +194,14 @@ def test_reasons_use_top_contributors_and_evidence_without_trading_language() ->
 
     reason_text = "\n".join(reason.summary for reason in result.reasons)
     assert "공개 데이터 기준" in reason_text
-    for prohibited in ["매수", "매도", "목표가", "진입가", "손절가", "수익 보장", "확실", "무조건"]:
+    for prohibited in [
+        "매수",
+        "매도",
+        "목표가",
+        "진입가",
+        "손절가",
+        "수익 보장",
+        "확실",
+        "무조건",
+    ]:
         assert prohibited not in reason_text

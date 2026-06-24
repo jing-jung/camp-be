@@ -4,13 +4,10 @@ from decimal import Decimal
 from typing import Any
 
 from fastapi.testclient import TestClient
-from sqlalchemy import delete
-from sqlalchemy import event
-from sqlalchemy import select
+from sqlalchemy import delete, event, select
 from sqlalchemy.orm import Session
 
 from app.orm import EvidenceChunk, RecommendationScore, SourceDocument
-
 
 PROHIBITED_KOREAN_TERMS = [
     "매수",
@@ -52,7 +49,10 @@ def _assert_candidate_shape(candidate: dict[str, Any]) -> None:
     assert 0 <= candidate["recommendation_score"] <= 100
     assert candidate["evidence_count"] >= 2
     assert candidate["evidence_level"] in {"strong", "medium", "weak"}
-    assert candidate["disclaimer"] == "공개 데이터 기반 검토 후보이며 최종 투자 판단은 사용자에게 있습니다."
+    assert (
+        candidate["disclaimer"]
+        == "공개 데이터 기반 검토 후보이며 최종 투자 판단은 사용자에게 있습니다."
+    )
 
 
 def _replace_live_evidence_chunks(
@@ -220,7 +220,10 @@ def test_recommendation_and_score_overlay_live_evidence_freshness(
     assert score_response.status_code == 200
     for payload in [candidate_response.json(), score_response.json()]:
         assert payload["evidence_count"] == live_count
-        assert payload["data_freshness"]["live_evidence_latest_at"] == published_at.isoformat()
+        assert (
+            payload["data_freshness"]["live_evidence_latest_at"]
+            == published_at.isoformat()
+        )
 
 
 def test_recommendation_endpoints_do_not_emit_prohibited_korean_terms(

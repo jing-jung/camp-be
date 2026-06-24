@@ -11,22 +11,26 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.orm import Disclosure, EvidenceChunk, IngestionRun, NewsItem, SourceDocument
-from app.services.external.clients import NAVER_PROVIDER, OPENDART_PROVIDER
-from app.services.external.types import ExternalApiResult, ExternalRequest, ExternalResponse
 from app.services import ingestion as ingestion_module
+from app.services.external.clients import NAVER_PROVIDER, OPENDART_PROVIDER
+from app.services.external.types import (
+    ExternalApiResult,
+    ExternalRequest,
+    ExternalResponse,
+)
 from app.services.ingestion import (
-    check_ingestion_readiness,
-    check_provider_egress,
     NoopPayloadArchiver,
     ProviderIngestionRequest,
     ProviderIngestionService,
     build_request_hash,
     build_run_id,
+    check_ingestion_readiness,
+    check_provider_egress,
     check_raw_archive_write,
+    handle_ingestion_event,
+    hydrate_external_api_settings,
     reconcile_stale_started_runs,
     summarize_ingestion_status,
-    hydrate_external_api_settings,
-    handle_ingestion_event,
     upsert_evidence_chunk,
 )
 
@@ -66,7 +70,9 @@ class FailingArchiver:
         raise RuntimeError("s3 endpoint unavailable with secret-like token")
 
 
-def test_build_request_hash_uses_provider_ticker_source_date_and_request_params() -> None:
+def test_build_request_hash_uses_provider_ticker_source_date_and_request_params() -> (
+    None
+):
     base = build_request_hash(
         provider=OPENDART_PROVIDER,
         ticker="005930",
@@ -119,7 +125,9 @@ def test_provider_ingestion_rejects_requests_above_operational_limits(
     def fail_if_called(self, *, ticker: str, corp_code=None, page_count: int = 10):
         nonlocal provider_called
         provider_called = True
-        raise AssertionError("provider call should not run when request limits are exceeded")
+        raise AssertionError(
+            "provider call should not run when request limits are exceeded"
+        )
 
     monkeypatch.setattr(
         "app.services.ingestion.OpenDartClient.list_disclosures",
@@ -161,7 +169,9 @@ def test_opendart_ingestion_upserts_disclosures_and_sources(
     monkeypatch,
     seeded_session: Session,
 ) -> None:
-    def fake_list_disclosures(self, *, ticker: str, corp_code=None, page_count: int = 10):
+    def fake_list_disclosures(
+        self, *, ticker: str, corp_code=None, page_count: int = 10
+    ):
         return ExternalApiResult(
             provider=OPENDART_PROVIDER,
             endpoint="/list.json",
@@ -230,7 +240,9 @@ def test_opendart_ingestion_upserts_disclosures_and_sources(
         select(Disclosure).where(Disclosure.receipt_no == "202606180001")
     ).one()
     assert disclosure.provider == OPENDART_PROVIDER
-    assert disclosure.raw_payload["raw_archive_uri"].startswith("s3://stockbrief-dev-raw/")
+    assert disclosure.raw_payload["raw_archive_uri"].startswith(
+        "s3://stockbrief-dev-raw/"
+    )
 
     source_document = seeded_session.scalars(
         select(SourceDocument).where(
@@ -239,19 +251,27 @@ def test_opendart_ingestion_upserts_disclosures_and_sources(
         )
     ).one()
     assert source_document.source_type == "disclosure"
-    assert source_document.metadata_["raw_archive_uri"].startswith("s3://stockbrief-dev-raw/")
+    assert source_document.metadata_["raw_archive_uri"].startswith(
+        "s3://stockbrief-dev-raw/"
+    )
 
     evidence_chunk = seeded_session.scalars(
-        select(EvidenceChunk).where(EvidenceChunk.evidence_id == "ev_opendart_005930_202606180001")
+        select(EvidenceChunk).where(
+            EvidenceChunk.evidence_id == "ev_opendart_005930_202606180001"
+        )
     ).one()
     assert evidence_chunk.source_document_id == source_document.id
     assert evidence_chunk.evidence_type == "disclosure"
     assert evidence_chunk.chunk_text == "반기보고서"
-    assert evidence_chunk.source_url == "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=202606180001"
+    assert (
+        evidence_chunk.source_url
+        == "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=202606180001"
+    )
 
     run = seeded_session.scalars(
         select(IngestionRun).where(
-            IngestionRun.run_id == build_run_id(
+            IngestionRun.run_id
+            == build_run_id(
                 provider=OPENDART_PROVIDER,
                 source_date="2026-06-18",
                 ticker="005930",
@@ -355,11 +375,16 @@ def test_evidence_chunk_upsert_recovers_from_concurrent_insert_conflict(
     assert chunk.source_url == "https://example.com/new"
     assert chunk.metadata_ == {"provider": OPENDART_PROVIDER}
     assert conflict["done"] is True
-    assert len(
-        seeded_session.scalars(
-            select(EvidenceChunk).where(EvidenceChunk.evidence_id == "ev_concurrent")
-        ).all()
-    ) == 1
+    assert (
+        len(
+            seeded_session.scalars(
+                select(EvidenceChunk).where(
+                    EvidenceChunk.evidence_id == "ev_concurrent"
+                )
+            ).all()
+        )
+        == 1
+    )
     records = [
         record
         for record in caplog.records
@@ -380,7 +405,9 @@ def test_explicit_run_id_is_scoped_per_ticker_in_batch(
 ) -> None:
     provider_calls: list[str] = []
 
-    def fake_list_disclosures(self, *, ticker: str, corp_code=None, page_count: int = 10):
+    def fake_list_disclosures(
+        self, *, ticker: str, corp_code=None, page_count: int = 10
+    ):
         provider_calls.append(ticker)
         return ExternalApiResult(
             provider=OPENDART_PROVIDER,
@@ -482,7 +509,9 @@ def test_naver_ingestion_upserts_news_and_source_documents(
             },
         )
 
-    monkeypatch.setattr("app.services.ingestion.NaverNewsClient.search_news", fake_search_news)
+    monkeypatch.setattr(
+        "app.services.ingestion.NaverNewsClient.search_news", fake_search_news
+    )
     service = ProviderIngestionService(
         seeded_session,
         settings=Settings(NAVER_CLIENT_ID="id", NAVER_CLIENT_SECRET="secret"),
@@ -556,7 +585,9 @@ def test_ingestion_status_summarizes_recent_runs_and_latest_evidence(
             },
         )
 
-    monkeypatch.setattr("app.services.ingestion.NaverNewsClient.search_news", fake_search_news)
+    monkeypatch.setattr(
+        "app.services.ingestion.NaverNewsClient.search_news", fake_search_news
+    )
     service = ProviderIngestionService(
         seeded_session,
         settings=Settings(NAVER_CLIENT_ID="id", NAVER_CLIENT_SECRET="secret"),
@@ -697,7 +728,9 @@ def test_provider_fallback_marks_partial_failed_without_persisting_rows(
     monkeypatch,
     seeded_session: Session,
 ) -> None:
-    def fake_list_disclosures(self, *, ticker: str, corp_code=None, page_count: int = 10):
+    def fake_list_disclosures(
+        self, *, ticker: str, corp_code=None, page_count: int = 10
+    ):
         return ExternalApiResult(
             provider=OPENDART_PROVIDER,
             endpoint="/list.json",
@@ -739,7 +772,9 @@ def test_persist_failure_rolls_back_normalized_rows_before_marking_failed(
     monkeypatch,
     seeded_session: Session,
 ) -> None:
-    def fake_list_disclosures(self, *, ticker: str, corp_code=None, page_count: int = 10):
+    def fake_list_disclosures(
+        self, *, ticker: str, corp_code=None, page_count: int = 10
+    ):
         return ExternalApiResult(
             provider=OPENDART_PROVIDER,
             endpoint="/list.json",
@@ -797,7 +832,8 @@ def test_persist_failure_rolls_back_normalized_rows_before_marking_failed(
 
     run = seeded_session.scalars(
         select(IngestionRun).where(
-            IngestionRun.run_id == build_run_id(
+            IngestionRun.run_id
+            == build_run_id(
                 provider=OPENDART_PROVIDER,
                 source_date="2026-06-18",
                 ticker="005930",
@@ -843,7 +879,9 @@ def test_handle_ingestion_event_raises_for_scheduled_failure(monkeypatch) -> Non
                 "results": [{"status": "partial_failed"}],
             }
 
-    monkeypatch.setattr("app.services.ingestion.get_session_factory", lambda: FakeSessionFactory())
+    monkeypatch.setattr(
+        "app.services.ingestion.get_session_factory", lambda: FakeSessionFactory()
+    )
     monkeypatch.setattr(
         "app.services.ingestion.ProviderIngestionService",
         FakeProviderIngestionService,
@@ -871,7 +909,9 @@ def test_hydrate_external_api_settings_reads_external_secret(monkeypatch) -> Non
     )
 
     settings = hydrate_external_api_settings(
-        Settings(EXTERNAL_API_SECRET_ARN="arn:aws:secretsmanager:ap-northeast-2:123:secret:external")
+        Settings(
+            EXTERNAL_API_SECRET_ARN="arn:aws:secretsmanager:ap-northeast-2:123:secret:external"
+        )
     )
 
     assert settings.opendart_api_key == "opendart-secret"
@@ -879,7 +919,9 @@ def test_hydrate_external_api_settings_reads_external_secret(monkeypatch) -> Non
     assert settings.naver_client_secret == "naver-secret"
 
 
-def test_check_ingestion_readiness_reports_missing_configuration_without_secret_values() -> None:
+def test_check_ingestion_readiness_reports_missing_configuration_without_secret_values() -> (
+    None
+):
     result = check_ingestion_readiness(Settings())
 
     assert result["ok"] is False
@@ -962,9 +1004,10 @@ def test_check_ingestion_readiness_returns_secret_load_error(monkeypatch) -> Non
         },
     }
     assert "secret unavailable" not in str(result)
-    assert {"code": "external_api_secret_load_failed", "field": "EXTERNAL_API_SECRET_ARN"} in result[
-        "issues"
-    ]
+    assert {
+        "code": "external_api_secret_load_failed",
+        "field": "EXTERNAL_API_SECRET_ARN",
+    } in result["issues"]
 
 
 def test_check_raw_archive_write_reports_missing_bucket_configuration() -> None:
@@ -973,7 +1016,9 @@ def test_check_raw_archive_write_reports_missing_bucket_configuration() -> None:
     assert result == {
         "ok": False,
         "checks": {"raw_archive": {"configured": False, "write_verified": False}},
-        "issues": [{"code": "missing_ingestion_raw_bucket", "field": "INGESTION_RAW_BUCKET"}],
+        "issues": [
+            {"code": "missing_ingestion_raw_bucket", "field": "INGESTION_RAW_BUCKET"}
+        ],
     }
 
 
@@ -1016,7 +1061,9 @@ def test_check_raw_archive_write_returns_error_code_without_exception_message() 
                 "error_code": "RuntimeError",
             }
         },
-        "issues": [{"code": "raw_archive_write_failed", "field": "INGESTION_RAW_BUCKET"}],
+        "issues": [
+            {"code": "raw_archive_write_failed", "field": "INGESTION_RAW_BUCKET"}
+        ],
     }
     assert "secret-like token" not in str(result)
 
@@ -1039,7 +1086,9 @@ def test_check_provider_egress_reports_reachable_provider_endpoints() -> None:
     assert all(call.timeout_seconds == 3.0 for call in calls)
 
 
-def test_check_provider_egress_empty_provider_list_defaults_to_supported_providers() -> None:
+def test_check_provider_egress_empty_provider_list_defaults_to_supported_providers() -> (
+    None
+):
     calls: list[ExternalRequest] = []
 
     def fake_transport(request: ExternalRequest) -> ExternalResponse:
@@ -1061,7 +1110,9 @@ def test_check_provider_egress_treats_http_error_as_reachable() -> None:
     def fake_transport(_request: ExternalRequest) -> ExternalResponse:
         raise FakeHttpError("forbidden")
 
-    result = check_provider_egress({"provider": OPENDART_PROVIDER}, transport=fake_transport)
+    result = check_provider_egress(
+        {"provider": OPENDART_PROVIDER}, transport=fake_transport
+    )
 
     assert result["ok"] is True
     assert result["issues"] == []
@@ -1079,7 +1130,9 @@ def test_check_provider_egress_reports_network_failure_without_secret_values() -
     def fake_transport(_request: ExternalRequest) -> ExternalResponse:
         raise TimeoutError("network timeout with no credentials")
 
-    result = check_provider_egress({"providers": [NAVER_PROVIDER]}, transport=fake_transport)
+    result = check_provider_egress(
+        {"providers": [NAVER_PROVIDER]}, transport=fake_transport
+    )
 
     assert result["ok"] is False
     assert result["checks"]["providers"][NAVER_PROVIDER] == {
@@ -1100,7 +1153,9 @@ def test_check_provider_egress_reports_network_failure_without_secret_values() -
 
 
 def test_check_provider_egress_rejects_unsupported_provider() -> None:
-    result = check_provider_egress({"providers": ["UNKNOWN"]}, transport=lambda _request: None)
+    result = check_provider_egress(
+        {"providers": ["UNKNOWN"]}, transport=lambda _request: None
+    )
 
     assert result == {
         "ok": False,

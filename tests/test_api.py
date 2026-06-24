@@ -2,7 +2,6 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
-
 client = TestClient(app)
 
 
@@ -85,6 +84,7 @@ def test_openapi_documents_common_error_response() -> None:
 
     assert response.status_code == 200
     health_responses = response.json()["paths"]["/v1/health"]["get"]["responses"]
-    assert "ApiErrorResponse" in health_responses["404"]["content"]["application/json"][
-        "schema"
-    ]["$ref"]
+    assert (
+        "ApiErrorResponse"
+        in health_responses["404"]["content"]["application/json"]["schema"]["$ref"]
+    )

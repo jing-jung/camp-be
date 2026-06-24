@@ -6,7 +6,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import auth
-from app.auth import CognitoClaims, _upsert_user_from_claims, get_current_user, get_optional_current_user
+from app.auth import (
+    CognitoClaims,
+    _upsert_user_from_claims,
+    get_current_user,
+    get_optional_current_user,
+)
 from app.config import Settings, get_settings
 from app.db import get_db_session
 from app.main import app
@@ -29,7 +34,9 @@ def _auth_user(session: Session, sub: str = "cognito-sub-1") -> User:
     return user
 
 
-def _authenticated_client(seeded_session: Session, sub: str = "cognito-sub-1") -> TestClient:
+def _authenticated_client(
+    seeded_session: Session, sub: str = "cognito-sub-1"
+) -> TestClient:
     user = _auth_user(seeded_session, sub)
 
     def override_current_user() -> User:
@@ -59,7 +66,9 @@ def test_protected_me_requires_auth(seeded_api_client: TestClient) -> None:
     assert response.json()["error"]["code"] == "INVALID_REQUEST"
 
 
-def test_cognito_claims_upsert_user_without_password_storage(seeded_session: Session) -> None:
+def test_cognito_claims_upsert_user_without_password_storage(
+    seeded_session: Session,
+) -> None:
     user = _upsert_user_from_claims(
         seeded_session,
         CognitoClaims(
@@ -215,7 +224,9 @@ def test_get_and_patch_me_uses_cognito_sub_from_auth_context(
         payload = response.json()
         assert payload["cognito_sub"] == "cognito-sub-1"
         assert payload["nickname"] == "researcher"
-        user = seeded_session.scalars(select(User).where(User.cognito_sub == "cognito-sub-1")).one()
+        user = seeded_session.scalars(
+            select(User).where(User.cognito_sub == "cognito-sub-1")
+        ).one()
         assert user.nickname == "researcher"
     finally:
         app.dependency_overrides.clear()
@@ -359,8 +370,12 @@ def test_watchlist_import_merges_without_duplicate_tickers(
         assert payload["skipped_existing_count"] == 1
         assert {item["ticker"] for item in payload["items"]} == {"005930", "000660"}
 
-        user = seeded_session.scalars(select(User).where(User.cognito_sub == "cognito-sub-1")).one()
-        rows = seeded_session.scalars(select(Watchlist).where(Watchlist.user_id == user.id)).all()
+        user = seeded_session.scalars(
+            select(User).where(User.cognito_sub == "cognito-sub-1")
+        ).one()
+        rows = seeded_session.scalars(
+            select(Watchlist).where(Watchlist.user_id == user.id)
+        ).all()
         assert len(rows) == 2
     finally:
         app.dependency_overrides.clear()
@@ -386,7 +401,9 @@ def test_chat_sessions_are_user_scoped(seeded_session: Session) -> None:
         app.dependency_overrides.clear()
 
 
-def test_authenticated_chat_persists_session_and_messages(seeded_session: Session) -> None:
+def test_authenticated_chat_persists_session_and_messages(
+    seeded_session: Session,
+) -> None:
     user = _auth_user(seeded_session, "cognito-sub-chat")
 
     def override_current_user() -> User:
@@ -414,10 +431,14 @@ def test_authenticated_chat_persists_session_and_messages(seeded_session: Sessio
         assert payload["data"]["session_id"]
         assert client.get("/v1/me/chat-sessions").json()["count"] == 1
         messages = seeded_session.scalars(
-            select(ChatMessage).where(ChatMessage.session_id == payload["data"]["session_id"])
+            select(ChatMessage).where(
+                ChatMessage.session_id == payload["data"]["session_id"]
+            )
         ).all()
         assert [message.role for message in messages] == ["user", "assistant"]
-        assistant_message = next(message for message in messages if message.role == "assistant")
+        assistant_message = next(
+            message for message in messages if message.role == "assistant"
+        )
         assert {"evidence_id", "type", "title", "source_url", "published_at"}.issubset(
             assistant_message.citations[0]
         )
@@ -427,7 +448,9 @@ def test_authenticated_chat_persists_session_and_messages(seeded_session: Sessio
             for citation in assistant_message.citations
             if citation["published_at"] is not None
         )
-        assert any(citation["published_at"] for citation in payload["data"]["citations"])
+        assert any(
+            citation["published_at"] for citation in payload["data"]["citations"]
+        )
         assert all(
             isinstance(citation["published_at"], str)
             for citation in payload["data"]["citations"]
@@ -497,10 +520,14 @@ def test_authenticated_bedrock_chat_persists_after_read_session_close(
         assert payload["message"] == "bedrock Agent 응답을 반환했습니다."
         assert "공개 데이터 기준 검토 대상" in payload["data"]["answer"]
         messages = seeded_session.scalars(
-            select(ChatMessage).where(ChatMessage.session_id == payload["data"]["session_id"])
+            select(ChatMessage).where(
+                ChatMessage.session_id == payload["data"]["session_id"]
+            )
         ).all()
         assert [message.role for message in messages] == ["user", "assistant"]
-        assistant_message = next(message for message in messages if message.role == "assistant")
+        assistant_message = next(
+            message for message in messages if message.role == "assistant"
+        )
         assert "공개 데이터 기준 검토 대상" in assistant_message.content
         assert assistant_message.citations
     finally:
