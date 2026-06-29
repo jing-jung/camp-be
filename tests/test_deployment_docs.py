@@ -172,6 +172,25 @@ def test_hosted_auth_smoke_runbook_documents_redacted_validation() -> None:
     assert "/v1/me/chat-sessions" in script
 
 
+def test_cloud_completion_audit_documents_current_terraform_drift_classification() -> None:
+    audit = (
+        REPOSITORY_ROOT / "docs/engineering/CLOUD_DEV_COMPLETION_AUDIT.md"
+    ).read_text(encoding="utf-8")
+
+    assert "Terraform drift classification" in audit
+    assert "0 to add, 5 to change, 0 to destroy" in audit
+    assert "No NAT Gateway, EventBridge Scheduler, SNS topic" in audit
+    assert "Amplify app in-place update" in audit
+    assert "Amplify branch in-place update" in audit
+    assert "Cognito web client in-place update" in audit
+    assert "RDS instance in-place update" in audit
+    assert "Lambda function in-place update" in audit
+    assert "Expected package artifact drift" in audit
+    assert "Do not apply this plan as-is or as a blind repair step" in audit
+    assert "This #221 follow-up records the current reviewed Terraform drift baseline" in audit
+    assert "NAT/scheduler cost posture decided in #214" in audit
+
+
 def test_backend_dev_deploy_checks_assumed_account_matches_backend() -> None:
     workflow = (
         REPOSITORY_ROOT / ".github/workflows/backend-dev-deploy.yml"
@@ -289,7 +308,8 @@ def test_cloud_dev_completion_audit_documents_current_scope_and_smokes() -> None
     assert "enable_lambda_nat_egress=false" in audit_doc
     assert "terraform plan -var-file=envs/dev/deploy.auto.tfvars.json -detailed-exitcode" in audit_doc
     assert "Do not apply this plan as-is" in audit_doc
-    assert "issue `#214`" in audit_doc
+    assert "This #221 follow-up records the current reviewed Terraform drift baseline" in audit_doc
+    assert "NAT/scheduler cost posture decided in #214" in audit_doc
     assert "operational_alarm_email_addresses" in audit_doc
     assert "AgentCore Runtime is disabled" in audit_doc
 
