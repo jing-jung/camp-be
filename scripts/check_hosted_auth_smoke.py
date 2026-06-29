@@ -189,13 +189,18 @@ def check_auth_api_endpoint(
         timeout_seconds,
     )
     body = parse_json_body(response.body)
-    ok = response.error_code is None and response.status_code == 200 and bool(body.get("data"))
+    summary = summarize_api_response(path, body)
+    ok = (
+        response.error_code is None
+        and response.status_code == 200
+        and summary.get("contract_ok") is True
+    )
     return CheckResult(
         ok=ok,
         name=f"auth_api:{path}",
         target=path,
         status_code=response.status_code,
-        summary=summarize_api_response(path, body),
+        summary=summary,
         error_code=response.error_code or extract_error_code(body),
         error_message=response.error_message,
     )
@@ -255,10 +260,16 @@ def parse_json_body(body: bytes) -> dict[str, Any]:
 
 
 def summarize_api_response(path: str, body: dict[str, Any]) -> dict[str, Any]:
-    data = body.get("data")
+    data = response_payload(body)
     if path == "/v1/me" and isinstance(data, dict):
+        authenticated = (
+            isinstance(data.get("cognito_sub"), str)
+            and bool(data.get("cognito_sub"))
+        ) or (isinstance(data.get("sub"), str) and bool(data.get("sub")))
         return {
-            "authenticated": True,
+            "response_shape": "me",
+            "contract_ok": authenticated,
+            "authenticated": authenticated,
             "email_present": isinstance(data.get("email"), str) and bool(data.get("email")),
             "email_verified": data.get("email_verified") is True,
             "nickname_present": isinstance(data.get("nickname"), str) and bool(data.get("nickname")),
@@ -271,12 +282,26 @@ def summarize_api_response(path: str, body: dict[str, Any]) -> dict[str, Any]:
                 for key in preferences
                 if key in {"markets", "notifications", "risk_profile", "sectors"}
             )
-            return {"preference_keys": safe_keys}
+            return {
+                "response_shape": "preferences",
+                "contract_ok": True,
+                "preference_keys": safe_keys,
+            }
     if path == "/v1/me/watchlist" and isinstance(data, dict):
-        return {"item_count": count_from_response(data)}
+        item_count = count_from_response(data)
+        return {
+            "response_shape": "watchlist",
+            "contract_ok": item_count is not None,
+            "item_count": item_count,
+        }
     if path == "/v1/me/chat-sessions" and isinstance(data, dict):
-        return {"count": number_or_none(data.get("count"))}
-    return {"response_shape": "recognized" if isinstance(data, (dict, list)) else "unknown"}
+        count = number_or_none(data.get("count"))
+        return {
+            "response_shape": "chat_sessions",
+            "contract_ok": count is not None,
+            "count": count,
+        }
+    return {"response_shape": "unknown", "contract_ok": False}
 
 
 def collect_blockers(checks: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
@@ -299,6 +324,11 @@ def extract_error_code(body: dict[str, Any]) -> str | None:
     if isinstance(error, dict) and isinstance(error.get("code"), str):
         return error["code"]
     return None
+
+
+def response_payload(body: dict[str, Any]) -> Any:
+    data = body.get("data")
+    return data if isinstance(data, dict) else body
 
 
 def number_or_none(value: object) -> int | None:
