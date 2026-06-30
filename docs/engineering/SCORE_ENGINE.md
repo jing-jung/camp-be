@@ -1,30 +1,36 @@
 # Score Engine Contract
 
+Active score version: `factor-rank-2026-06-30`
+
 ## 1. Purpose
 
 The score engine ranks candidates for a 근거 기반 국내 주식 종목 후보 추천 서비스 using deterministic rules and public evidence. It does not call an LLM and does not produce trading advice.
 
 Recommendation means `검토 후보 추천`. Scores are inputs for review, not instructions to trade.
 
-## 2. Output Contract
+## 2. Engine Output Contract
 
-Every score response must include:
+Every engine score result must include:
 
 - `ticker`
 - `as_of`
+- `score.version`
 - `score.total`
 - `score.evidence_level`
 - `score.components`
 - `missing_data`
+- `fallback_data`
 - `data_freshness`
+- `risk_tags`
 
-JSON example:
+Engine JSON example:
 
 ```json
 {
   "ticker": "005930",
   "as_of": "2026-06-09",
   "score": {
+    "version": "factor-rank-2026-06-30",
     "total": 78.5,
     "evidence_level": "strong",
     "components": [
@@ -36,35 +42,44 @@ JSON example:
         "reason": "부채비율과 유동성 지표가 기준 대비 양호합니다.",
         "input_refs": ["fs_005930_2026q1"],
         "evidence_ids": ["ev_20260609_005930_001"],
-        "rule_version": "score-rules-2026-06-01"
+        "rule_version": "factor-rank-2026-06-30"
       }
     ]
   },
   "missing_data": [],
+  "fallback_data": [],
   "data_freshness": {
     "as_of": "2026-06-09",
     "price_as_of": "2026-06-09",
     "financials_as_of": "2026-03-31",
     "disclosures_fetched_at": "2026-06-09T08:00:00Z",
     "news_fetched_at": "2026-06-09T08:30:00Z"
-  }
+  },
+  "risk_tags": []
 }
 ```
+
+Current public candidate and stock score responses expose persisted component
+fields only. They include component `name`, `weight`, `raw_score`,
+`weighted_score`, `reason`, `input_refs`, and `evidence_ids`, but do not expose
+component `rule_version`, `used_fallback`, or score result `fallback_data`.
+Those fields remain part of the engine/materializer contract for downstream
+persistence work.
 
 ## 3. Components And Weights
 
 The score has 8 fixed components. Weights must sum to 100.
 
-| Component | Weight | Main Inputs | Example Missing Data Key |
-| --- | ---: | --- | --- |
-| `financial_stability` | 20 | liabilities, equity, current liquidity metrics | `financial_stability.inputs` |
-| `profitability` | 15 | operating income, net income, margins | `profitability.inputs` |
-| `growth` | 15 | revenue growth, operating income growth | `growth.inputs` |
-| `valuation` | 10 | market cap, earnings, book value proxies | `valuation.inputs` |
-| `news_attention` | 10 | NAVER news count, recency, normalized attention | `news_attention.inputs` |
-| `disclosure_event` | 10 | OpenDART disclosure types, recency, materiality rules | `disclosure_event.inputs` |
-| `liquidity` | 10 | volume, trading value, market cap | `liquidity.inputs` |
-| `momentum_volatility` | 10 | recent momentum and volatility metrics | `momentum_volatility.inputs` |
+| Component | Weight | Direction | Main Inputs | Example Missing Data Key |
+| --- | ---: | --- | --- | --- |
+| `financial_stability` | 20 | Higher score for lower leverage and stronger equity basis. | liabilities, equity, current liquidity metrics | `financial_stability.inputs` |
+| `profitability` | 15 | Higher score for stronger operating and net margins. | operating income, net income, margins | `profitability.inputs` |
+| `growth` | 15 | Higher score for stronger revenue and operating income growth. | revenue growth, operating income growth | `growth.inputs` |
+| `valuation` | 10 | Higher score for lower valuation multiples against earnings/book proxies. | market cap, earnings, book value proxies | `valuation.inputs` |
+| `news_attention` | 10 | Higher score for recent, confident public news evidence. | NAVER news count, recency, normalized attention | `news_attention.inputs` |
+| `disclosure_event` | 10 | Higher score for recent, relevant disclosure evidence. | OpenDART disclosure types, recency, materiality rules | `disclosure_event.inputs` |
+| `liquidity` | 10 | Higher score for stronger volume, trading value, and market-cap liquidity. | volume, trading value, market cap | `liquidity.inputs` |
+| `momentum_volatility` | 10 | Higher score for positive momentum with lower volatility. | recent momentum and volatility metrics | `momentum_volatility.inputs` |
 
 ## 4. Calculation Rules
 
@@ -76,6 +91,8 @@ Each component produces:
 - `input_refs`: source data row references or provider document references.
 - `evidence_ids`: evidence chunks supporting the component.
 - `rule_version`: active score rule version.
+- `used_fallback`: whether fallback price metrics were used for that component.
+- `missing_data`: component-level missing input keys.
 
 Total score:
 
@@ -89,7 +106,8 @@ Rules:
 - If a component has no usable input, set `raw_score` to `null`, `weighted_score` to `0`, and add a `missing_data` entry.
 - Do not redistribute missing component weight to other components.
 - Persist all 8 components even when some inputs are missing.
-- Use the active `recommendation_score_rules.rule_version`.
+- Use `score_version="factor-rank-2026-06-30"` for the score result and each component `rule_version`.
+- If fallback price metrics are used, list the component names in `fallback_data`.
 
 ## 5. Evidence Level
 
@@ -208,5 +226,7 @@ Reason example:
 - `score.total` is rounded to one decimal place.
 - `missing_data` is always present.
 - `data_freshness.as_of` is present for candidate eligibility.
+- `fallback_data` is always present, even when empty.
+- `risk_tags` is always present, even when empty.
 - Candidate list includes only evidence-gate-passing scores.
 - No LLM call is made during scoring.

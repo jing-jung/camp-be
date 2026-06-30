@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 
+from app.seed.mock_data import SCORE_VERSION as SEED_SCORE_VERSION
+
 
 EXPECTED_API_PATHS = {
     "/v1/health": ["get"],
@@ -38,6 +40,19 @@ RECOMMENDATION_CANDIDATE_REQUIRED_FIELDS = {
     "disclaimer",
 }
 
+SCORE_COMPONENT_REQUIRED_FIELDS = {
+    "name",
+    "weight",
+    "raw_score",
+    "weighted_score",
+    "reason",
+}
+
+SCORE_COMPONENT_OPTIONAL_FIELDS = {
+    "input_refs",
+    "evidence_ids",
+}
+
 CHAT_RESPONSE_REQUIRED_FIELDS = {
     "success",
     "data",
@@ -74,6 +89,20 @@ def test_recommendation_candidate_schema_required_fields_snapshot(
     assert schema["properties"]["recommendation_score"]["maximum"] == 100
 
 
+def test_recommendation_score_component_schema_fields_snapshot(
+    seeded_api_client: TestClient,
+) -> None:
+    response = seeded_api_client.get("/v1/openapi.json")
+
+    assert response.status_code == 200
+    schema = response.json()["components"]["schemas"]["ScoreComponentResponse"]
+    assert set(schema["properties"]) >= (
+        SCORE_COMPONENT_REQUIRED_FIELDS | SCORE_COMPONENT_OPTIONAL_FIELDS
+    )
+    assert set(schema["required"]) >= SCORE_COMPONENT_REQUIRED_FIELDS
+    assert "rule_version" not in schema["properties"]
+
+
 def test_chat_response_schema_required_fields_snapshot(
     seeded_api_client: TestClient,
 ) -> None:
@@ -92,3 +121,36 @@ def test_chat_response_schema_required_fields_snapshot(
         "citations",
         "safety",
     }
+    assert set(data_schema["required"]) >= {
+        "session_id",
+        "answer",
+        "citations",
+        "safety",
+    }
+
+
+def test_current_public_score_contract_excludes_future_materializer_fields(
+    seeded_api_client: TestClient,
+) -> None:
+    response = seeded_api_client.get("/v1/openapi.json")
+
+    assert response.status_code == 200
+    schemas = response.json()["components"]["schemas"]
+    for schema_name in ["RecommendationCandidateResponse", "StockScoreResponse"]:
+        properties = schemas[schema_name]["properties"]
+        assert "fallback_data" not in properties
+        assert "score_version" not in properties
+
+
+def test_seed_public_stock_score_version_baseline(
+    seeded_api_client: TestClient,
+) -> None:
+    candidates_response = seeded_api_client.get("/v1/stocks/candidates")
+    detail_response = seeded_api_client.get("/v1/stocks/005930")
+
+    assert candidates_response.status_code == 200
+    assert detail_response.status_code == 200
+    candidate = candidates_response.json()["data"]["items"][0]
+    detail = detail_response.json()["data"]
+    assert candidate["score"]["version"] == SEED_SCORE_VERSION
+    assert detail["score"]["version"] == SEED_SCORE_VERSION

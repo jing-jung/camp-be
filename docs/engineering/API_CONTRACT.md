@@ -1,7 +1,7 @@
 # API Contract
 
 This document is the canonical StockBrief public API contract for the
-2026-06-10 sprint backbone.
+`factor-rank-2026-06-30` score contract.
 
 The API serves mock/seed data only in this sprint. OpenDART, NAVER, KRX,
 Bedrock, and RAG ingestion adapters must keep the same response shape when
@@ -92,6 +92,32 @@ compatibility:
 - `GET /v1/stocks/{ticker}/score`
 
 New frontend work should prefer the public endpoints in the table above.
+
+Score-backed candidate and score endpoints use stored deterministic scores.
+The current mock seed baseline stores `mock-score-rules-2026-06-09` in public
+`score.version` fields. After score materialization is connected, newly
+materialized scores must store `factor-rank-2026-06-30` in the same field.
+
+Candidate score contract fields:
+
+- `recommendation_score`: total score from `0` to `100`.
+- `score_components`: exactly 8 component score records when all persisted
+  component data is available. Each component includes `name`, `weight`,
+  `raw_score`, `weighted_score`, `reason`, `input_refs`, and `evidence_ids`.
+- `evidence_count`: distinct evidence item count used by the score.
+- `evidence_level`: `strong`, `medium`, or `weak`.
+- `missing_data`: missing input keys. Present even when empty.
+- `data_freshness`: freshness metadata, including `as_of`.
+- `risk_tags`: risk signal tags associated with the same ticker and score date.
+
+Future materialized score fields:
+
+- `fallback_data`: fallback component names from the score engine contract.
+  Downstream persistence must preserve it when score materialization starts.
+- Component `rule_version`: the score engine emits this internally, but the
+  current public component response does not expose it.
+- Score result `score_version`: the score engine emits this internally, while
+  the current public API exposes persisted score version as `score.version`.
 
 ## 4. GET /health
 
@@ -303,6 +329,9 @@ Response `data`:
 
 ## 9. POST /chat
 
+Chat providers explain stored scores, evidence, freshness, missing data, and
+risk tags. They must not generate, replace, or modify score values.
+
 Request:
 
 ```json
@@ -431,4 +460,3 @@ Response:
     }
   ]
 }
-```
