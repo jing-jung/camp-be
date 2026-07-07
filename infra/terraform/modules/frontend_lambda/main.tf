@@ -53,7 +53,6 @@ resource "aws_lambda_function" "frontend" {
       var.environment_variables,
       {
         # Lambda Web Adapter configuration
-        AWS_LAMBDA_EXEC_WRAPPER = "/opt/bootstrap"
         PORT                    = "3000"
         HOSTNAME                = "0.0.0.0"
         NODE_ENV                = "production"

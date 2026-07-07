@@ -1,7 +1,7 @@
 locals {
   # Extract domain from Lambda Function URL
   # Example: abc123.lambda-url.ap-northeast-2.on.aws
-  function_url_domain = replace(var.function_url, "https://", "")
+  function_url_domain = replace(replace(var.function_url, "https://", ""), "/", "")
 }
 
 # CloudFront Origin Request Policy for Lambda Function URL
