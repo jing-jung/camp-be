@@ -24,3 +24,27 @@ variable "price_class" {
   type        = string
   default     = "PriceClass_200"
 }
+
+variable "enable_caching" {
+  description = "Enable CloudFront caching optimization."
+  type        = bool
+  default     = true
+}
+
+variable "default_ttl" {
+  description = "Default TTL for cached objects in seconds."
+  type        = number
+  default     = 3600  # 1 hour
+}
+
+variable "min_ttl" {
+  description = "Minimum TTL for cached objects in seconds."
+  type        = number
+  default     = 0
+}
+
+variable "max_ttl" {
+  description = "Maximum TTL for cached objects in seconds."
+  type        = number
+  default     = 86400  # 24 hours
+}
