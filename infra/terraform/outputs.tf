@@ -13,6 +13,41 @@ output "amplify_default_domain" {
   value       = try(module.amplify[0].default_domain, "")
 }
 
+output "frontend_ecr_repository_url" {
+  description = "ECR repository URL for the frontend container image."
+  value       = try(module.frontend_ecs[0].ecr_repository_url, "")
+}
+
+output "frontend_ecs_cluster_name" {
+  description = "ECS cluster name for the frontend service."
+  value       = try(module.frontend_ecs[0].cluster_name, "")
+}
+
+output "frontend_ecs_service_name" {
+  description = "ECS service name for the frontend."
+  value       = try(module.frontend_ecs[0].service_name, "")
+}
+
+output "frontend_alb_dns_name" {
+  description = "ALB DNS name for the frontend service."
+  value       = try(module.frontend_ecs[0].alb_dns_name, "")
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution id for the hosted frontend."
+  value       = try(module.frontend_cloudfront[0].distribution_id, "")
+}
+
+output "cloudfront_domain_name" {
+  description = "CloudFront domain name for the hosted frontend."
+  value       = try(module.frontend_cloudfront[0].domain_name, "")
+}
+
+output "frontend_hosted_url" {
+  description = "HTTPS URL for the hosted frontend."
+  value       = local.frontend_site_url
+}
+
 output "database_secret_arn" {
   description = "Secrets Manager ARN used by Lambda for database connection material."
   value       = module.rds.db_secret_arn

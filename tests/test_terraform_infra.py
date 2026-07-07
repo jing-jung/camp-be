@@ -30,6 +30,8 @@ def test_multi_account_dev_profile_templates_are_available() -> None:
     assert not (TERRAFORM_ROOT / "envs/dev-junwoo/deploy.auto.tfvars.json").exists()
     assert template_tfvars["environment"] == "REPLACE_WITH_TARGET_ENV"
     assert template_tfvars["enable_amplify"] is False
+    assert template_tfvars["enable_frontend_ecs"] is False
+    assert template_tfvars["enable_frontend_cloudfront"] is False
     assert template_tfvars["enable_lambda_nat_egress"] is False
     assert template_tfvars["lambda_nat_create_public_subnet"] is False
     assert template_tfvars["lambda_nat_public_subnet_cidr_block"] == ""
@@ -137,18 +139,37 @@ def test_dev_backend_and_tfvars_track_current_dev_account() -> None:
 def test_dev_deploy_tfvars_tracks_hosted_web_bootstrap() -> None:
     deploy_tfvars = json.loads(_read("envs/dev/deploy.auto.tfvars.json"))
     terraform_readme = _read("README.md")
-    hosted_origin = "https://main.d20hgo2k8atldu.amplifyapp.com"
+    frontend_tf = _read("frontend.tf")
 
-    assert deploy_tfvars["enable_amplify"] is True
-    assert deploy_tfvars["amplify_cognito_redirect_uri"] == f"{hosted_origin}/auth/callback"
+    assert deploy_tfvars["enable_amplify"] is False
+    assert deploy_tfvars["enable_frontend_ecs"] is True
+    assert deploy_tfvars["enable_frontend_cloudfront"] is True
+    assert deploy_tfvars["frontend_rendering_mode"] == "container"
+    assert deploy_tfvars["amplify_cognito_redirect_uri"] == ""
     assert deploy_tfvars["agentcore_runtime_enabled"] is False
     assert deploy_tfvars["agentcore_runtime_container_uri"] == ""
-    assert hosted_origin in deploy_tfvars["cors_allowed_origins"].split(",")
-    assert f"{hosted_origin}/auth/callback" in deploy_tfvars["cognito_callback_urls"]
-    assert f"{hosted_origin}/account" in deploy_tfvars["cognito_logout_urls"]
-    assert "current dev profile has Amplify enabled" in terraform_readme
-    assert "hosted FE callback/logout URLs" in terraform_readme
+    assert "https://main.d20hgo2k8atldu.amplifyapp.com" not in deploy_tfvars["cors_allowed_origins"]
+    assert "https://main.d20hgo2k8atldu.amplifyapp.com/auth/callback" not in deploy_tfvars[
+        "cognito_callback_urls"
+    ]
+    assert 'module "frontend_ecs"' in frontend_tf
+    assert 'module "frontend_cloudfront"' in frontend_tf
+    assert "current dev profile has Amplify enabled" not in terraform_readme
+    assert "ECS Fargate" in terraform_readme or "frontend_ecs" in terraform_readme
     assert "Keep `agentcore_runtime_container_uri` empty" in terraform_readme
+
+
+def test_frontend_hosting_modules_exist() -> None:
+    for relative_path in (
+        "modules/frontend_ecs/main.tf",
+        "modules/frontend_ecs/variables.tf",
+        "modules/frontend_ecs/outputs.tf",
+        "modules/frontend_cloudfront/main.tf",
+        "modules/frontend_cloudfront/variables.tf",
+        "modules/frontend_cloudfront/outputs.tf",
+        "frontend.tf",
+    ):
+        assert (TERRAFORM_ROOT / relative_path).is_file(), relative_path
 
 
 def test_dev_account_transition_requires_backend_deploy_result_on_issue_52() -> None:

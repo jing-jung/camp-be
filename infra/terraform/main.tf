@@ -185,8 +185,8 @@ module "cognito" {
   source = "./modules/cognito"
 
   name_prefix             = local.name_prefix
-  callback_urls           = var.cognito_callback_urls
-  logout_urls             = var.cognito_logout_urls
+  callback_urls           = local.effective_cognito_callback_urls
+  logout_urls             = local.effective_cognito_logout_urls
   hosted_ui_domain_prefix = var.cognito_hosted_ui_domain_prefix
 }
 
@@ -285,7 +285,7 @@ module "api_lambda" {
     SERVICE_NAME                      = "stockbrief-api"
     SERVICE_VERSION                   = "0.1.0"
     API_BASE_PATH                     = "/v1"
-    CORS_ALLOWED_ORIGINS              = var.cors_allowed_origins
+    CORS_ALLOWED_ORIGINS              = local.effective_cors_allowed_origins
     CHAT_PROVIDER                     = var.chat_provider
     BEDROCK_CHAT_MODEL_ID             = var.bedrock_chat_model_id
     BEDROCK_CHAT_REGION               = local.effective_bedrock_chat_region

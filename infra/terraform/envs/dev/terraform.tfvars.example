@@ -17,6 +17,13 @@ bedrock_chat_inference_profile_foundation_model_regions = [
 bedrock_chat_inference_profile_extra_foundation_model_arns = []
 
 enable_amplify         = false
+enable_frontend_ecs    = false
+enable_frontend_cloudfront = false
+frontend_rendering_mode = "container"
+frontend_alb_subnet_ids = []
+frontend_ecs_subnet_ids = []
+frontend_assign_public_ip = true
+frontend_desired_count = 1
 amplify_repository_url = "https://github.com/example/StockBrief-fe"
 amplify_branch_name    = "main"
 # After Amplify default_domain is known, set this to the hosted callback URL.

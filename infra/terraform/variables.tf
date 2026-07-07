@@ -431,3 +431,74 @@ variable "ingestion_dlq_message_retention_seconds" {
   type        = number
   default     = 1209600
 }
+
+variable "enable_frontend_ecs" {
+  description = "Whether to create the ECS Fargate frontend service and ALB."
+  type        = bool
+  default     = false
+}
+
+variable "enable_frontend_cloudfront" {
+  description = "Whether to create the CloudFront distribution in front of the frontend service."
+  type        = bool
+  default     = false
+}
+
+variable "frontend_rendering_mode" {
+  description = "Frontend rendering mode. Container mode serves the Next.js SSR app from ECS."
+  type        = string
+  default     = "container"
+
+  validation {
+    condition     = contains(["static", "container"], var.frontend_rendering_mode)
+    error_message = "frontend_rendering_mode must be static or container."
+  }
+}
+
+variable "frontend_alb_subnet_ids" {
+  description = "Public subnet ids for the internet-facing frontend ALB."
+  type        = list(string)
+  default     = []
+}
+
+variable "frontend_ecs_subnet_ids" {
+  description = "Subnet ids for frontend ECS tasks. Defaults to frontend_alb_subnet_ids when empty."
+  type        = list(string)
+  default     = []
+}
+
+variable "frontend_assign_public_ip" {
+  description = "Assign a public IP to frontend ECS tasks."
+  type        = bool
+  default     = true
+}
+
+variable "frontend_desired_count" {
+  description = "Desired ECS task count for the frontend service."
+  type        = number
+  default     = 1
+}
+
+variable "frontend_container_image" {
+  description = "Optional full container image URI for the frontend ECS task."
+  type        = string
+  default     = ""
+}
+
+variable "frontend_image_tag" {
+  description = "ECR image tag used when frontend_container_image is empty."
+  type        = string
+  default     = "latest"
+}
+
+variable "frontend_cpu" {
+  description = "Fargate CPU units for the frontend task."
+  type        = number
+  default     = 256
+}
+
+variable "frontend_memory" {
+  description = "Fargate memory in MiB for the frontend task."
+  type        = number
+  default     = 512
+}

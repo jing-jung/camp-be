@@ -89,9 +89,11 @@ Environment variables required by `.github/workflows/backend-dev-deploy.yml`.
    - `ingestion_schedule_tickers`
    - `ingestion_schedule_jobs`
 
-   For the first backend-only deployment, keep `enable_amplify = false`. Enable
-   it only after the target GitHub organization approves the Amplify GitHub App.
-   The current dev profile has Amplify enabled for the reviewed hosted FE URL.
+   For the first backend-only deployment, keep `enable_amplify = false` and
+   `enable_frontend_ecs = false`. Enable `enable_frontend_ecs` and
+   `enable_frontend_cloudfront` after the public subnet ids for the frontend
+   ALB are reviewed. The current dev profile uses ECS Fargate + CloudFront for
+   the hosted frontend and keeps Amplify disabled.
    Keep `enable_ingestion_scheduler = false` until provider API credentials are
    stored in Secrets Manager, Lambda provider egress is available, and the
    target ticker/job list is reviewed. After a live provider smoke window ends
@@ -105,7 +107,7 @@ Environment variables required by `.github/workflows/backend-dev-deploy.yml`.
    turn NAT egress off again before pausing the dev environment unless the
    reviewed scheduler window still needs live provider access.
    The committed dev `deploy.auto.tfvars.json` tracks the current 560 account,
-   hosted FE callback/logout URLs, and the reviewed provider schedules.
+   ECS/CloudFront frontend hosting, and the reviewed provider schedules.
 
 4. If deploying Amplify through Terraform, install the AWS Amplify GitHub App for
    the target region/account and provide a GitHub personal access token through
@@ -319,15 +321,32 @@ NEXT_PUBLIC_COGNITO_REDIRECT_URI
 Terraform. `NEXT_PUBLIC_COGNITO_HOSTED_UI_DOMAIN` should use the
 `cognito_hosted_ui_domain` Terraform output as-is, including the `https://`
 scheme. The frontend normalizes Hosted UI domains with or without the scheme,
-but manual Amplify variables and local `.env.local` files should follow the
-Terraform output shape so account switching stays predictable.
+but manual env files and Docker build args should follow the Terraform output
+shape so account switching stays predictable.
 
-For local development against a deployed dev stack, regenerate
-`StockBrief-fe/.env.local` from the active backend outputs:
+Hosted frontend deployment uses ECS Fargate + CloudFront instead of Amplify:
+
+1. Apply backend Terraform with `enable_frontend_ecs = true` and
+   `enable_frontend_cloudfront = true`.
+2. Run `frontend-dev-deploy` from `camp-fe` to build the Docker image, push to
+   ECR, roll the ECS service, and invalidate CloudFront.
+3. Terraform automatically appends the CloudFront URL to CORS and Cognito
+   callback/logout allowlists on the next backend apply.
+
+Useful Terraform outputs after apply:
 
 ```bash
-cd ../StockBrief-fe
-pnpm run sync:dev-env -- --terraform-dir ../StockBrief-be/infra/terraform
+terraform output frontend_hosted_url
+terraform output frontend_ecr_repository_url
+terraform output cloudfront_distribution_id
+```
+
+For local development against a deployed dev stack, regenerate
+`camp-fe/.env.local` from the active backend outputs:
+
+```bash
+cd ../camp-fe
+pnpm run sync:dev-env -- --terraform-dir ../camp-be/infra/terraform
 ```
 
 The generated `.env.local` contains only public frontend values and must remain
