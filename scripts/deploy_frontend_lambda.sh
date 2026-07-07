@@ -8,7 +8,8 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # 기본 변수
 AWS_REGION="${AWS_REGION:-ap-northeast-2}"
-AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-560271561793}"
+# 터미널에 설정된 AWS 인증 정보를 이용해 자동으로 계정 ID를 가져옵니다.
+AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(aws sts get-caller-identity --query Account --output text)}"
 ENVIRONMENT="${ENVIRONMENT:-dev}"
 ECR_REPOSITORY="stockbrief-${ENVIRONMENT}-frontend"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
