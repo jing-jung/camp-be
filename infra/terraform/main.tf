@@ -320,3 +320,46 @@ module "amplify" {
   cognito_hosted_ui_domain = module.cognito.hosted_ui_domain == "" ? "" : "${module.cognito.hosted_ui_domain}.auth.${var.aws_region}.amazoncognito.com"
   cognito_redirect_uri     = var.amplify_cognito_redirect_uri == "" ? var.cognito_callback_urls[0] : var.amplify_cognito_redirect_uri
 }
+
+# ElastiCache (Redis) for caching
+module "elasticache" {
+  count  = var.enable_elasticache ? 1 : 0
+  source = "./modules/elasticache"
+
+  name_prefix                  = local.name_prefix
+  vpc_id                       = var.vpc_id
+  subnet_ids                   = var.lambda_subnet_ids
+  lambda_security_group_ids    = local.effective_lambda_security_group_ids
+  node_type                    = var.elasticache_node_type
+  num_cache_nodes              = var.elasticache_num_nodes
+  engine_version               = var.elasticache_engine_version
+  snapshot_retention_limit     = var.elasticache_snapshot_retention
+}
+
+# WAF for CloudFront
+module "waf" {
+  count  = var.enable_waf ? 1 : 0
+  source = "./modules/waf"
+
+  name_prefix         = local.name_prefix
+  cloudfront_arn      = local.frontend_cloudfront_lambda_enabled ? module.frontend_cloudfront_lambda[0].cloudfront_distribution_arn : ""
+  rate_limit          = var.waf_rate_limit
+  allowed_countries   = var.waf_allowed_countries
+  enable_geo_blocking = var.waf_enable_geo_blocking
+}
+
+# Enhanced Monitoring & Alerting
+module "monitoring" {
+  count  = var.enable_enhanced_monitoring ? 1 : 0
+  source = "./modules/monitoring"
+
+  name_prefix                    = local.name_prefix
+  alert_email                    = var.alert_email
+  slack_webhook_url              = var.slack_webhook_url
+  api_lambda_function_name       = module.api_lambda.lambda_function_name
+  frontend_lambda_function_name  = local.frontend_lambda_enabled ? module.frontend_lambda[0].lambda_function_name : ""
+  api_gateway_id                 = module.api_lambda.api_gateway_id
+  db_instance_identifier         = module.rds.db_instance_identifier
+  redis_replication_group_id     = var.enable_elasticache ? module.elasticache[0].redis_replication_group_id : ""
+  aws_region                     = var.aws_region
+}

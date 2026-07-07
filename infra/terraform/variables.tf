@@ -563,3 +563,81 @@ variable "frontend_cloudfront_max_ttl" {
   type        = number
   default     = 0
 }
+
+# === Production Features ===
+
+# ElastiCache (Redis) Variables
+variable "enable_elasticache" {
+  description = "Whether to enable ElastiCache (Redis) for caching."
+  type        = bool
+  default     = false
+}
+
+variable "elasticache_node_type" {
+  description = "ElastiCache node type."
+  type        = string
+  default     = "cache.t4g.micro"
+}
+
+variable "elasticache_num_nodes" {
+  description = "Number of cache nodes (2 for Multi-AZ)."
+  type        = number
+  default     = 2
+}
+
+variable "elasticache_engine_version" {
+  description = "Redis engine version."
+  type        = string
+  default     = "7.0"
+}
+
+variable "elasticache_snapshot_retention" {
+  description = "Number of days to retain automatic cache snapshots."
+  type        = number
+  default     = 5
+}
+
+# WAF Variables
+variable "enable_waf" {
+  description = "Whether to enable AWS WAF for CloudFront."
+  type        = bool
+  default     = false
+}
+
+variable "waf_rate_limit" {
+  description = "Rate limit per IP (requests per 5 minutes)."
+  type        = number
+  default     = 2000
+}
+
+variable "waf_allowed_countries" {
+  description = "List of allowed country codes for geo-blocking."
+  type        = list(string)
+  default     = ["KR", "US", "JP"]
+}
+
+variable "waf_enable_geo_blocking" {
+  description = "Whether to enable geographic blocking in WAF."
+  type        = bool
+  default     = false
+}
+
+# Enhanced Monitoring Variables
+variable "enable_enhanced_monitoring" {
+  description = "Whether to enable enhanced monitoring with comprehensive dashboards and alarms."
+  type        = bool
+  default     = false
+}
+
+variable "alert_email" {
+  description = "Email address for CloudWatch alarm notifications."
+  type        = string
+  default     = ""
+}
+
+variable "slack_webhook_url" {
+  description = "Slack webhook URL for alarm notifications."
+  type        = string
+  default     = ""
+  sensitive   = true
+}

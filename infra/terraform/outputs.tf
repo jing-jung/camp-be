@@ -58,6 +58,26 @@ output "frontend_lambda_function_url" {
   value       = try(module.frontend_lambda[0].function_url, "")
 }
 
+output "redis_endpoint" {
+  description = "ElastiCache Redis endpoint."
+  value       = var.enable_elasticache ? try(module.elasticache[0].redis_endpoint, "") : ""
+}
+
+output "waf_web_acl_id" {
+  description = "WAF Web ACL ID."
+  value       = var.enable_waf ? try(module.waf[0].web_acl_id, "") : ""
+}
+
+output "monitoring_dashboard_url" {
+  description = "CloudWatch dashboard URL for monitoring."
+  value       = var.enable_enhanced_monitoring ? try(module.monitoring[0].dashboard_url, "") : ""
+}
+
+output "monitoring_sns_topic_arn" {
+  description = "SNS topic ARN for alerts."
+  value       = var.enable_enhanced_monitoring ? try(module.monitoring[0].sns_topic_arn, "") : ""
+}
+
 output "database_secret_arn" {
   description = "Secrets Manager ARN used by Lambda for database connection material."
   value       = module.rds.db_secret_arn
