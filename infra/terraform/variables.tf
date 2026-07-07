@@ -502,3 +502,64 @@ variable "frontend_memory" {
   type        = number
   default     = 512
 }
+
+# Lambda Web Adapter Frontend Variables
+variable "enable_frontend_lambda" {
+  description = "Whether to deploy the frontend using Lambda Web Adapter (serverless)."
+  type        = bool
+  default     = false
+}
+
+variable "enable_frontend_cloudfront_lambda" {
+  description = "Whether to create a CloudFront distribution in front of the Lambda Function URL."
+  type        = bool
+  default     = false
+}
+
+variable "frontend_lambda_memory_mb" {
+  description = "Lambda memory size in MB for the frontend function."
+  type        = number
+  default     = 2048
+}
+
+variable "frontend_lambda_timeout_seconds" {
+  description = "Lambda timeout in seconds for the frontend function."
+  type        = number
+  default     = 30
+}
+
+variable "frontend_lambda_reserved_concurrent_executions" {
+  description = "Reserved concurrent executions for the frontend Lambda. Use -1 for unreserved (autoscaling)."
+  type        = number
+  default     = -1
+}
+
+variable "frontend_lambda_log_retention_days" {
+  description = "CloudWatch Logs retention in days for the frontend Lambda."
+  type        = number
+  default     = 7
+}
+
+variable "frontend_lambda_environment_variables" {
+  description = "Additional environment variables for the frontend Lambda function."
+  type        = map(string)
+  default     = {}
+}
+
+variable "frontend_cloudfront_price_class" {
+  description = "CloudFront price class for the Lambda frontend distribution."
+  type        = string
+  default     = "PriceClass_100"
+}
+
+variable "frontend_cloudfront_default_ttl" {
+  description = "Default TTL for CloudFront cache (0 for no cache for SSR)."
+  type        = number
+  default     = 0
+}
+
+variable "frontend_cloudfront_max_ttl" {
+  description = "Maximum TTL for CloudFront cache (0 for no cache for SSR)."
+  type        = number
+  default     = 0
+}

@@ -1,0 +1,60 @@
+# Lambda Web Adapter를 사용한 Next.js Standalone 배포
+# https://github.com/awslabs/aws-lambda-web-adapter
+
+# Stage 1: Dependencies
+FROM public.ecr.aws/docker/library/node:20-alpine AS deps
+WORKDIR /app
+
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* pnpm-lock.yaml* ./
+RUN \
+  if [ -f pnpm-lock.yaml ]; then \
+    corepack enable pnpm && pnpm install --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then \
+    npm ci; \
+  else \
+    echo "No lockfile found" && exit 1; \
+  fi
+
+# Stage 2: Builder
+FROM public.ecr.aws/docker/library/node:20-alpine AS builder
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build Next.js application
+RUN \
+  if [ -f pnpm-lock.yaml ]; then \
+    corepack enable pnpm && pnpm run build; \
+  else \
+    npm run build; \
+  fi
+
+# Stage 3: Runner (Lambda Compatible)
+FROM public.ecr.aws/docker/library/node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+
+# Add Lambda Web Adapter
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.8.4 /lambda-adapter /opt/extensions/lambda-adapter
+
+# Copy necessary files from builder
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Add non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs && \
+    chown -R nextjs:nodejs /app
+
+USER nextjs
+
+EXPOSE 3000
+
+# Lambda Web Adapter will wrap this command
+CMD ["node", "server.js"]

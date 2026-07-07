@@ -1,4 +1,5 @@
 locals {
+  # ECS-based frontend (legacy)
   frontend_ecs_subnet_ids = length(var.frontend_ecs_subnet_ids) > 0 ? var.frontend_ecs_subnet_ids : var.frontend_alb_subnet_ids
   frontend_ecs_enabled = (
     var.enable_frontend_ecs &&
@@ -11,7 +12,21 @@ locals {
     local.frontend_ecs_enabled &&
     var.frontend_rendering_mode == "container"
   )
-  frontend_site_url = local.frontend_cloudfront_enabled ? module.frontend_cloudfront[0].hosted_url : (
+
+  # Lambda-based frontend (serverless)
+  frontend_lambda_enabled = (
+    var.enable_frontend_lambda &&
+    var.frontend_container_image != ""
+  )
+  frontend_cloudfront_lambda_enabled = (
+    var.enable_frontend_cloudfront_lambda &&
+    local.frontend_lambda_enabled
+  )
+
+  # Determine frontend URL
+  frontend_site_url = (
+    local.frontend_cloudfront_lambda_enabled ? module.frontend_cloudfront_lambda[0].hosted_url :
+    local.frontend_cloudfront_enabled ? module.frontend_cloudfront[0].hosted_url :
     var.enable_amplify ? try("https://${module.amplify[0].default_domain}", "") : ""
   )
   frontend_callback_url = local.frontend_site_url != "" ? "${local.frontend_site_url}/auth/callback" : ""
@@ -58,4 +73,36 @@ module "frontend_cloudfront" {
   name_prefix     = local.name_prefix
   rendering_mode  = var.frontend_rendering_mode
   alb_dns_name    = module.frontend_ecs[0].alb_dns_name
+}
+
+# Lambda Web Adapter-based Frontend (Serverless)
+module "frontend_lambda" {
+  count  = local.frontend_lambda_enabled ? 1 : 0
+  source = "./modules/frontend_lambda"
+
+  name_prefix               = local.name_prefix
+  container_image           = var.frontend_container_image
+  image_tag                 = var.frontend_image_tag
+  memory_mb                 = var.frontend_lambda_memory_mb
+  timeout_seconds           = var.frontend_lambda_timeout_seconds
+  reserved_concurrent_executions = var.frontend_lambda_reserved_concurrent_executions
+  log_retention_days        = var.frontend_lambda_log_retention_days
+
+  environment_variables = merge(
+    var.frontend_lambda_environment_variables,
+    {
+      NEXT_PUBLIC_API_BASE = module.api_lambda.api_base_url
+    }
+  )
+}
+
+module "frontend_cloudfront_lambda" {
+  count  = local.frontend_cloudfront_lambda_enabled ? 1 : 0
+  source = "./modules/frontend_cloudfront_lambda"
+
+  name_prefix = local.name_prefix
+  function_url = module.frontend_lambda[0].function_url
+  price_class = var.frontend_cloudfront_price_class
+  default_ttl = var.frontend_cloudfront_default_ttl
+  max_ttl     = var.frontend_cloudfront_max_ttl
 }

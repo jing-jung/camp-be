@@ -35,17 +35,27 @@ output "frontend_alb_dns_name" {
 
 output "cloudfront_distribution_id" {
   description = "CloudFront distribution id for the hosted frontend."
-  value       = try(module.frontend_cloudfront[0].distribution_id, "")
+  value       = try(module.frontend_cloudfront_lambda[0].cloudfront_distribution_id, try(module.frontend_cloudfront[0].distribution_id, ""))
 }
 
 output "cloudfront_domain_name" {
   description = "CloudFront domain name for the hosted frontend."
-  value       = try(module.frontend_cloudfront[0].domain_name, "")
+  value       = try(module.frontend_cloudfront_lambda[0].cloudfront_domain_name, try(module.frontend_cloudfront[0].domain_name, ""))
 }
 
 output "frontend_hosted_url" {
   description = "HTTPS URL for the hosted frontend."
   value       = local.frontend_site_url
+}
+
+output "frontend_lambda_function_name" {
+  description = "Lambda function name for the serverless frontend."
+  value       = try(module.frontend_lambda[0].lambda_function_name, "")
+}
+
+output "frontend_lambda_function_url" {
+  description = "Lambda Function URL for the serverless frontend."
+  value       = try(module.frontend_lambda[0].function_url, "")
 }
 
 output "database_secret_arn" {
