@@ -233,7 +233,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage_low" {
 
 # ElastiCache CPU (if Redis enabled)
 resource "aws_cloudwatch_metric_alarm" "redis_cpu_high" {
-  count = var.redis_replication_group_id != "" ? 1 : 0
+  count = var.enable_elasticache ? 1 : 0
 
   alarm_name          = "${var.name_prefix}-redis-cpu-high"
   comparison_operator = "GreaterThanThreshold"
@@ -391,7 +391,7 @@ resource "aws_cloudwatch_dashboard" "main" {
       {
         type = "metric"
         properties = {
-          metrics = var.redis_replication_group_id != "" ? [
+          metrics = var.enable_elasticache ? [
             ["AWS/ElastiCache", "CPUUtilization", { stat = "Average", label = "CPU %" }],
             [".", "DatabaseMemoryUsagePercentage", { stat = "Average", label = "Memory %" }],
             [".", "CacheHits", { stat = "Sum", label = "Cache Hits", yAxis = "right" }],

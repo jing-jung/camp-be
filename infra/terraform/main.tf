@@ -360,6 +360,7 @@ module "monitoring" {
   frontend_lambda_function_name  = local.frontend_lambda_enabled ? module.frontend_lambda[0].lambda_function_name : ""
   api_gateway_id                 = module.api_lambda.api_id
   db_instance_identifier         = module.rds.db_instance_identifier
+  enable_elasticache             = var.enable_elasticache
   redis_replication_group_id     = var.enable_elasticache ? module.elasticache[0].redis_replication_group_id : ""
   aws_region                     = var.aws_region
 }

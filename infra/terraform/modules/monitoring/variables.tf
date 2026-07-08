@@ -47,3 +47,9 @@ variable "aws_region" {
   description = "AWS region"
   type        = string
 }
+
+variable "enable_elasticache" {
+  description = "Whether ElastiCache is enabled"
+  type        = bool
+  default     = false
+}
