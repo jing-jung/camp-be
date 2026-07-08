@@ -41,7 +41,18 @@ find "${BUILD_DIR}" -exec touch -t 198001010000 {} +
 
 (
   cd "${BUILD_DIR}"
-  python -c "
+  if command -v python3 &>/dev/null; then
+    PYTHON_CMD="python3"
+  elif command -v python &>/dev/null; then
+    PYTHON_CMD="python"
+  elif command -v py &>/dev/null; then
+    PYTHON_CMD="py"
+  else
+    echo "Error: Python is required to create the zip archive but was not found."
+    exit 1
+  fi
+
+  $PYTHON_CMD -c "
 import zipfile, os, sys
 with zipfile.ZipFile(sys.argv[1], 'w', zipfile.ZIP_DEFLATED) as zf:
     for root, dirs, files in os.walk('.'):
