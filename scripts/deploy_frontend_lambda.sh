@@ -44,7 +44,12 @@ fi
 # Docker 이미지 빌드
 echo ""
 echo "🔨 Docker 이미지 빌드 중..."
-FRONTEND_DIR="${PROJECT_ROOT}/../camp-fe"
+FRONTEND_DIR="${FRONTEND_DIR:-${PROJECT_ROOT}/../camp-fe}"
+if [ ! -d "${FRONTEND_DIR}" ]; then
+  echo "🚨 에러: 프론트엔드 폴더(${FRONTEND_DIR})를 찾을 수 없습니다."
+  echo "👉 해결: 'export FRONTEND_DIR=/실제/camp-fe/경로' 로 경로를 지정해주시거나, camp-be와 camp-fe를 같은 상위 폴더 아래에 나란히 두세요."
+  exit 1
+fi
 cd "${FRONTEND_DIR}"
 
 docker build \
