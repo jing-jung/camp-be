@@ -31,14 +31,10 @@ locals {
   )
   frontend_callback_url = local.frontend_site_url != "" ? "${local.frontend_site_url}/auth/callback" : ""
   frontend_logout_url   = local.frontend_site_url != "" ? "${local.frontend_site_url}/account" : ""
-  effective_cognito_callback_urls = distinct(concat(
-    var.cognito_callback_urls,
-    compact([local.frontend_callback_url]),
-  ))
-  effective_cognito_logout_urls = distinct(concat(
-    var.cognito_logout_urls,
-    compact([local.frontend_logout_url]),
-  ))
+  # Cycle prevention: Do not automatically inject frontend_site_url into Cognito
+  # You must add the generated CloudFront URL to cognito_callback_urls in tfvars manually after the first deployment.
+  effective_cognito_callback_urls = var.cognito_callback_urls
+  effective_cognito_logout_urls   = var.cognito_logout_urls
   effective_cors_allowed_origins = join(",", distinct(compact(concat(
     [for origin in split(",", var.cors_allowed_origins) : trimspace(origin) if trimspace(origin) != ""],
     local.frontend_site_url != "" ? [local.frontend_site_url] : [],
