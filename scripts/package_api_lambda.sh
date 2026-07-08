@@ -41,9 +41,15 @@ find "${BUILD_DIR}" -exec touch -t 198001010000 {} +
 
 (
   cd "${BUILD_DIR}"
-  # Deterministic Lambda packages include regular files only. Directory entries
-  # and symlinks are intentionally excluded unless the packaging policy changes.
-  find . -type f | LC_ALL=C sort | zip -X -q "${ZIP_PATH}" -@
+  python -c "
+import zipfile, os, sys
+with zipfile.ZipFile(sys.argv[1], 'w', zipfile.ZIP_DEFLATED) as zf:
+    for root, dirs, files in os.walk('.'):
+        for file in sorted(files):
+            file_path = os.path.join(root, file)
+            arcname = os.path.relpath(file_path, '.').replace(os.sep, '/')
+            zf.write(file_path, arcname)
+" "${ZIP_PATH}"
 )
 
 echo "Packaged ${ZIP_PATH}"
