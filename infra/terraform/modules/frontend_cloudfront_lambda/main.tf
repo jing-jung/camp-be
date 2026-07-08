@@ -30,7 +30,7 @@ resource "aws_cloudfront_cache_policy" "no_cache" {
 
   parameters_in_cache_key_and_forwarded_to_origin {
     cookies_config {
-      cookie_behavior = "all"
+      cookie_behavior = "none"
     }
 
     headers_config {
@@ -38,7 +38,7 @@ resource "aws_cloudfront_cache_policy" "no_cache" {
     }
 
     query_strings_config {
-      query_string_behavior = "all"
+      query_string_behavior = "none"
     }
 
     enable_accept_encoding_gzip   = true
