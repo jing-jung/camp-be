@@ -12,3 +12,8 @@ output "hosted_url" {
   description = "Full HTTPS URL for the frontend"
   value       = "https://${aws_cloudfront_distribution.frontend.domain_name}"
 }
+
+output "cloudfront_distribution_arn" {
+  description = "CloudFront distribution ARN"
+  value       = aws_cloudfront_distribution.frontend.arn
+}

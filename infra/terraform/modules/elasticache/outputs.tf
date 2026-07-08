@@ -17,3 +17,8 @@ output "redis_security_group_id" {
   description = "Security group ID for Redis"
   value       = aws_security_group.redis.id
 }
+
+output "redis_replication_group_id" {
+  description = "Redis Replication Group ID"
+  value       = aws_elasticache_replication_group.main.id
+}
