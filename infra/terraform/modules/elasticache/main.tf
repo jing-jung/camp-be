@@ -56,7 +56,7 @@ resource "aws_elasticache_subnet_group" "main" {
 # ElastiCache Replication Group (Redis Cluster)
 resource "aws_elasticache_replication_group" "main" {
   replication_group_id       = "${var.name_prefix}-redis"
-  replication_group_description = "Redis cluster for ${var.name_prefix}"
+  description                 = "Redis cluster for ${var.name_prefix}"
 
   engine               = "redis"
   engine_version       = var.engine_version

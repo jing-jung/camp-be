@@ -358,7 +358,7 @@ module "monitoring" {
   slack_webhook_url              = var.slack_webhook_url
   api_lambda_function_name       = module.api_lambda.lambda_function_name
   frontend_lambda_function_name  = local.frontend_lambda_enabled ? module.frontend_lambda[0].lambda_function_name : ""
-  api_gateway_id                 = module.api_lambda.api_gateway_id
+  api_gateway_id                 = module.api_lambda.api_id
   db_instance_identifier         = module.rds.db_instance_identifier
   redis_replication_group_id     = var.enable_elasticache ? module.elasticache[0].redis_replication_group_id : ""
   aws_region                     = var.aws_region
