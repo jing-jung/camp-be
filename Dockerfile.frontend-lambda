@@ -7,14 +7,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* pnpm-lock.yaml* ./
-RUN \
-  if [ -f pnpm-lock.yaml ]; then \
-    corepack enable pnpm && pnpm install --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then \
-    npm ci; \
-  else \
-    echo "No lockfile found" && exit 1; \
-  fi
+RUN npm ci
 
 # Stage 2: Builder
 FROM public.ecr.aws/docker/library/node:20-alpine AS builder
@@ -24,12 +17,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build Next.js application
-RUN \
-  if [ -f pnpm-lock.yaml ]; then \
-    corepack enable pnpm && pnpm run build; \
-  else \
-    npm run build; \
-  fi
+RUN npm run build
 
 # Stage 3: Runner (Lambda Compatible)
 FROM public.ecr.aws/docker/library/node:20-alpine AS runner
