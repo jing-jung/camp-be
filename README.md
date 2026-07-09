@@ -308,13 +308,29 @@ sequenceDiagram
 
 **결론**: 월 10만 페이지뷰 이하에서 약 70% 비용 절감!
 
-### 배포 가이드
+### 🚀 프론트엔드 배포 (Lambda + CloudFront)
 
-자세한 배포 방법은 다음 문서를 참고하세요:
-- 📘 [프론트엔드 Lambda 배포 가이드](./docs/FRONTEND_LAMBDA_DEPLOYMENT.md)
-- 📗 [Lambda Web Adapter 마이그레이션](./docs/LAMBDA_WEB_ADAPTER_MIGRATION.md)
+#### 자동 배포 스크립트 (권장) ⭐
 
-### 빠른 배포 (Windows)
+```powershell
+cd camp-be
+.\scripts\deploy-frontend-manual.ps1
+```
+
+**배포 시간**: 약 5-10분  
+**예상 비용**: ~$1-5/월 (개발 환경), ~$100/월 (월 100만 PV)
+
+#### 상세 가이드
+
+- 📋 [빠른 시작 가이드](./FRONTEND_QUICK_START.md) - 5분 안에 배포
+- ✅ [배포 체크리스트](./docs/FRONTEND_DEPLOYMENT_CHECKLIST.md) - 단계별 확인
+- 📘 [수동 배포 가이드](./docs/MANUAL_FRONTEND_DEPLOYMENT.md) - 상세한 수동 배포
+- 📗 [Lambda 배포 기술 문서](./docs/FRONTEND_LAMBDA_DEPLOYMENT.md) - 아키텍처 상세
+- 📕 [Lambda Web Adapter 마이그레이션](./docs/LAMBDA_WEB_ADAPTER_MIGRATION.md)
+
+### 백엔드 배포
+
+#### 빠른 배포 (Windows)
 
 ```powershell
 # 1. ECR 로그인

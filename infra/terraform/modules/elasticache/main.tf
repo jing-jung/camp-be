@@ -1,7 +1,9 @@
 # Random password for Redis auth
+# ElastiCache only allows: alphanumeric and symbols (excluding @, ", /)
 resource "random_password" "redis" {
-  length  = 32
-  special = true
+  length           = 32
+  special          = true
+  override_special = "!&#$^<>-"
 }
 
 # Store Redis auth token in Secrets Manager
